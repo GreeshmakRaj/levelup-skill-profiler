@@ -1,0 +1,188 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dll
+*.dylib
+*.egg
+*.egg-info/
+*.eggs/
+build/
+dist/
+wheels/
+share/python-wheels/
+develop-eggs/
+downloads/
+parts/
+sdist/
+var/
+*.whl
+*.manifest
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+virtualenv/
+pythonenv/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.desktop.ini
+*.sublime-*
+.project
+.pydevproject
+.settings/
+*.code-workspace
+
+# Secrets and Environment Variables
+.env
+.env.*
+!.env.example
+!.env.sample
+*.key
+*.pem
+*.crt
+*.p12
+.secrets/
+secrets/
+credentials.json
+*.secret
+*.secrets
+
+# Testing and Coverage
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.htmlcov/
+.tox/
+.pytest_cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+benchmarks/.benchmarks/
+
+# Logs and Databases
+*.log
+*.logs/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.pid
+*.seed
+*.pid.lock
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+notebooks/
+
+# Docker
+*.tar
+*.tar.gz
+*.log
+.dockerignore
+docker-compose.override.yml
+
+# Server and Deployment
+.uvicorn/
+.starlette/
+gunicorn.conf.py
+supervisord.conf
+*.pid
+*.sock
+*.socket
+procfile
+.foreman/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Application specific
+output/
+uploads/
+static/uploads/
+media/
+temp/
+tmp/
+*.tmp
+*.temp
+dump.rdb
+*.dump
+*.backup
+*.bak
+
+# uv and pip tools
+uv.toml
+uv.tool.lock
+pip-log.txt
+pip-delete-this-directory.txt
+pip-selfcheck.json
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+mypy.errors
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Profiling data
+.prof
+*.prof
+*.lprof
+
+# Local development overrides
+*.local.py
+*.local.ini
+config.local.*
+settings.local.*
+
+# Cache directories
+.cache/
+.cache_*
+*.cache
+*.cached
+
+# Release and builds
+*.tgz
+*.zip
+*.rar
+*.7z
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Database migrations (optional - team preference)
+# alembic/versions/*.pyc
+# But commit the .py migration files

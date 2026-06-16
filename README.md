@@ -1,130 +1,72 @@
 # CodeLift-AI
 
-A powerful code migration agent that automates the process of upgrading codebases to newer versions of programming languages and frameworks.
+An intelligent code migration agent powered by LangGraph that helps automate codebase upgrades and modernization.
 
 ## Overview
 
-CodeLift-AI is an intelligent migration assistant designed to help developers migrate their entire codebase to a specified version of a language or framework. Instead of manually refactoring code, the agent analyzes your project, generates a comprehensive migration plan, and provides detailed guidance for the upgrade process.
+CodeLift-AI is a flexible migration assistant built on LangGraph that analyzes your codebase and generates migration plans for upgrading to newer versions. It's designed to be language and framework agnostic, supporting any migration workflow you need.
 
 ## Features
 
-- **Intelligent Analysis**: Scans your codebase to understand the current language/framework version and dependencies
-- **Migration Planning**: Generates detailed migration plans tailored to your specific codebase
-- **Multi-Language Support**: Supports migration for various programming languages and frameworks
-- **Version Flexibility**: Can target any version specified by the user
-- **Comprehensive Guidance**: Provides step-by-step migration instructions and code transformation recommendations
-- **Dependency Management**: Identifies and handles framework/library dependency updates
-- **Impact Assessment**: Evaluates breaking changes and potential issues during migration
+- **Intelligent Analysis**: Analyzes your codebase to understand structure and current state
+- **Migration Planning**: Generates detailed, customizable migration plans
+- **LangGraph-Powered**: Built on LangGraph for complex, multi-step workflows
+- **Flexible Architecture**: Extensible node-based system for custom migration logic
+- **Agentic Workflow**: Supports analysis, planning, approval, and execution stages
 
 ## How It Works
 
-1. **Input Collection**: User provides:
-   - Current codebase (repository or directory)
-   - Target language/framework version
-   - Migration preferences and constraints
+CodeLift-AI uses a node-based workflow powered by LangGraph:
 
-2. **Codebase Analysis**: The agent:
-   - Analyzes the existing codebase structure
-   - Identifies the current version of language/framework
-   - Detects dependencies and third-party libraries
-   - Maps deprecated APIs and breaking changes
-
-3. **Migration Planning**: Generates a comprehensive plan including:
-   - Step-by-step migration stages
-   - Code transformation recommendations
-   - Dependency updates required
-   - Testing strategy
-
-4. **User Approval**: Presents the migration plan to the user for:
-   - Review of proposed changes
-   - Validation of migration strategy
-   - Approval to proceed with execution
-
-5. **Plan Execution**: Upon user approval, the agent:
-   - Executes the migration plan automatically
-   - Transforms code according to the planned stages
-   - Updates dependencies and configurations
-   - Generates a detailed execution report
+1. **Analyze**: Examines your codebase to understand its current state
+2. **Plan**: Generates a detailed migration strategy based on the analysis
+3. **Approve**: Presents the plan for review and approval
+4. **Execute**: Applies the migration plan automatically (when approved)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
-- Git
-- Target language/framework tools (e.g., Node.js for JavaScript migrations, Java for Java migrations)
+- Python 3.13+
+- [UV](https://docs.astral.sh/uv/) (fast Python package manager)
 
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/CodeLift-AI.git
+git clone git@github.com:GreeshmakRaj/CodeLift-AI.git
 cd CodeLift-AI
-pip install -r requirements.txt
+uv sync
 ```
 
-### Usage
+### Running the Agent
 
 ```bash
-python codelift_agent.py \
-  --repo /path/to/codebase \
-  --language python \
-  --target-version 3.11 \
-  --output migration_plan.json
+uv run python -m src.main
 ```
-
-#### Parameters
-
-- `--repo`: Path to the codebase repository
-- `--language`: Programming language (e.g., `python`, `javascript`, `java`)
-- `--target-version`: Target version for migration
-- `--output`: Output file for migration plan (JSON format)
 
 ## Example Output
 
-The agent generates a detailed migration plan containing:
-
-```json
-{
-  "project": "sample-project",
-  "current_version": "3.8",
-  "target_version": "3.11",
-  "estimated_effort": "Medium",
-  "migration_stages": [
-    {
-      "stage": 1,
-      "title": "Dependency Updates",
-      "description": "Update all dependencies to versions compatible with Python 3.11",
-      "actions": [...]
-    },
-    {
-      "stage": 2,
-      "title": "Syntax Updates",
-      "description": "Update deprecated syntax and API calls",
-      "actions": [...]
-    }
-  ]
-}
-```
-
-## Supported Languages & Frameworks
-
-- **Python** (2.7 → 3.x)
-- **JavaScript/TypeScript** (various versions)
-- **Java** (various LTS versions)
-- More languages coming soon!
+The agent generates a detailed migration plan with analysis results, recommendations, and execution steps.
 
 ## Project Structure
 
 ```
 CodeLift-AI/
 ├── README.md
-├── requirements.txt
-├── codelift_agent.py
-├── src/
-│   ├── analyzer/
-│   ├── planner/
-│   └── recommender/
-└── tests/
+├── pyproject.toml
+├── main.py                 # Entry point
+└── src/
+    ├── main.py
+    ├── state.py           # Graph state management
+    ├── graph/             # LangGraph implementation
+    │   └── migration_graph.py
+    ├── nodes/             # Individual workflow nodes
+    │   ├── analyze_node.py
+    │   ├── approval_node.py
+    │   ├── generate_node.py
+    │   └── plan_node.py
+    └── shared/            # Shared utilities
+        └── gemini_client.py
 ```
 
 ## Contributing
