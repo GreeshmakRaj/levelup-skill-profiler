@@ -1,268 +1,211 @@
-import { useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { analyzeSkills, getEmployeeSkills } from '../services/api'
-import SelfAssessmentInput from '../components/SelfAssessmentInput'
-import SkillProfileCard from '../components/SkillProfileCard'
+import { listMySkills, listUsers, deleteSkill } from '../services/api'
+import { supabase } from '../services/supabase'
+import { ROLES } from '../constants/roles'
+import ProfileSummaryCard from '../components/skills/ProfileSummaryCard'
+import UserManagement from '../components/users/UserManagement'
+import LearningPathCard from '../components/skills/LearningPathCard'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import { useToast } from '../components/ui/Toast'
+import StatCard, { StatCardSkeleton, STAT_ICONS } from '../components/ui/StatCard'
 
-const STEPS = ['Role Info', 'Self Assessment', 'Upload Resume', 'Results']
+function PageHeader({ title, subtitle }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-ink">{title}</h1>
+      {subtitle && <p className="text-muted text-sm mt-1">{subtitle}</p>}
+    </div>
+  )
+}
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth()
-  const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [analyzing, setAnalyzing] = useState(false)
-  const [error, setError] = useState('')
-  const [profile, setProfile] = useState(null)
+  const { profile, role, loading } = useAuth()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const [skills, setSkills] = useState([])
+  const [users, setUsers] = useState([])
+  const [dataLoading, setDataLoading] = useState(true)
+  const [toDelete, setToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [copied, setCopied] = useState(false)
 
-  // Form state
-  const [employeeId, setEmployeeId] = useState('')
-  const [currentRole, setCurrentRole] = useState('')
-  const [targetRole, setTargetRole] = useState('')
-  const [selfAssessment, setSelfAssessment] = useState({})
-  const [resumeFile, setResumeFile] = useState(null)
+  const isAssessor = role === ROLES.MANAGER || role === ROLES.EMPLOYEE
+  const isAdmin = role === ROLES.ADMIN
+  const isManager = role === ROLES.MANAGER
 
-  async function handleLoadExisting() {
-    if (!employeeId.trim()) return
-    setLoading(true)
-    setError('')
+  useEffect(() => {
+    if (!role) return
+    let active = true
+    setDataLoading(true)
+    const jobs = []
+    jobs.push(isAssessor ? listMySkills().catch(() => []) : Promise.resolve([]))
+    jobs.push(isAdmin || isManager ? listUsers().catch(() => []) : Promise.resolve([]))
+    Promise.all(jobs).then(([sk, us]) => {
+      if (!active) return
+      setSkills(sk); setUsers(us); setDataLoading(false)
+    })
+    return () => { active = false }
+  }, [role, isAssessor, isAdmin, isManager])
+
+  const reloadSkills = useCallback(() => {
+    listMySkills().then(setSkills).catch(() => {})
+  }, [])
+
+  async function copyApiKey() {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) {
+      toast.error('No active session token.')
+      return
+    }
     try {
-      const existing = await getEmployeeSkills(employeeId)
-      setProfile(existing)
-      setStep(3)
+      await navigator.clipboard.writeText(token)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      toast.success('Current API key copied.')
     } catch {
-      setError('No existing profile found. Fill in your roles and continue to create one.')
-    } finally {
-      setLoading(false)
+      toast.error('Could not copy the API key.')
     }
   }
 
-  async function handleAnalyze() {
-    setError('')
-    if (!resumeFile) { setError('Please upload your resume.'); return }
-    if (Object.keys(selfAssessment).length === 0) { setError('Add at least one skill in self assessment.'); return }
-
-    setAnalyzing(true)
+  async function confirmDelete() {
+    setDeleting(true)
     try {
-      const result = await analyzeSkills({
-        employeeId,
-        currentRole,
-        targetRole,
-        resume: resumeFile,
-        selfAssessment,
-      })
-      setProfile(result)
-      setStep(3)
+      await deleteSkill(toDelete.skillId)
+      toast.success('Assessment deleted.')
+      setToDelete(null)
+      reloadSkills()
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     } finally {
-      setAnalyzing(false)
+      setDeleting(false)
     }
   }
+
+  if (loading || !role) {
+    return (
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+      </div>
+    )
+  }
+
+  const latest = skills[0] || null
+  const managerCount = users.filter((u) => u.role === ROLES.MANAGER).length
+  const employeeCount = users.filter((u) => u.role === ROLES.EMPLOYEE).length
+  const skillCount = latest ? Object.keys(latest.skills || {}).length : 0
+  const gapCount = latest ? (latest.skillGaps?.length || 0) : 0
+
+  const stats = isAdmin
+    ? [
+        { label: 'Total Users', value: users.length, icon: STAT_ICONS.users, accent: 'brand', hint: 'across the organization' },
+        { label: 'Managers', value: managerCount, icon: STAT_ICONS.manager, accent: 'violet' },
+        { label: 'Employees', value: employeeCount, icon: STAT_ICONS.employee, accent: 'green' },
+        { label: 'Assessments', value: skills.length, icon: STAT_ICONS.chart, accent: 'amber', hint: 'your own' },
+      ]
+    : isManager
+    ? [
+        { label: 'My Team', value: users.length, icon: STAT_ICONS.users, accent: 'brand', hint: 'direct reports' },
+        { label: 'My Assessments', value: skills.length, icon: STAT_ICONS.chart, accent: 'violet' },
+        { label: 'Skills Tracked', value: skillCount, icon: STAT_ICONS.skills, accent: 'green', hint: 'latest analysis' },
+        { label: 'Open Skill Gaps', value: gapCount, icon: STAT_ICONS.gap, accent: 'amber', hint: 'latest analysis' },
+      ]
+    : [
+        { label: 'Assessments', value: skills.length, icon: STAT_ICONS.chart, accent: 'brand' },
+        { label: 'Skills Tracked', value: skillCount, icon: STAT_ICONS.skills, accent: 'green', hint: 'latest analysis' },
+        { label: 'Open Skill Gaps', value: gapCount, icon: STAT_ICONS.gap, accent: 'amber', hint: 'latest analysis' },
+      ]
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Top nav */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-brand-500 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347a3.001 3.001 0 00-.872 1.884l-.1.666A1 1 0 0115 19h-6a1 1 0 01-.995-1.083l-.1-.666a3 3 0 00-.872-1.884l-.347-.347z" />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title={`Welcome${profile?.username ? `, ${profile.username}` : ''}`}
+          subtitle={isAdmin ? 'Administer your organization’s users and access.' : 'Here’s an overview of your skill journey.'}
+        />
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <button
+            onClick={copyApiKey}
+            title="Copy your current API key (access token)"
+            className="group inline-flex items-center gap-2.5 rounded-xl border border-line bg-card px-5 py-3 text-base text-ink shadow-sm transition-all hover:border-brand-300 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          >
+            <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4-2a6 6 0 01-7.743 5.743L11 14H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            <span className="font-semibold">{copied ? 'Copied' : 'Copy API key'}</span>
+            {copied ? (
+              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-            </div>
-            <span className="font-semibold text-ink">Skill Profiler</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">{user?.email}</span>
-            <button onClick={signOut} className="btn-ghost text-sm">Sign out</button>
-          </div>
+            ) : (
+              <svg className="w-4 h-4 text-faint group-hover:text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2v-2" />
+              </svg>
+            )}
+          </button>
+          <p className="text-xs text-faint">you can access api's using token</p>
         </div>
-      </nav>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Page header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-ink">Your Skill Profile</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Upload your resume and self-assess your skills — we'll identify your gaps and career alignment.
-          </p>
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {dataLoading
+          ? [...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)
+          : stats.map((s) => <StatCard key={s.label} {...s} />)}
+      </div>
+
+      {/* Profile summary for Manager & Employee */}
+      {isAssessor && <ProfileSummaryCard profile={profile} latest={latest} />}
+
+      {/* User management for Admin & Manager */}
+      {(isAdmin || isManager) && <UserManagement creatorRole={role} />}
+
+      {/* Learning paths preview for Manager & Employee */}
+      {isAssessor && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-ink">Recent Learning Paths</h2>
+            <button className="btn-ghost text-sm" onClick={() => navigate('/learning-paths')}>View all →</button>
+          </div>
+
+          {dataLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => <div key={i} className="skeleton h-40" />)}
+            </div>
+          ) : skills.length === 0 ? (
+            <div className="card text-center py-10">
+              <p className="text-muted text-sm">You haven’t analyzed any skill gaps yet.</p>
+              <button className="btn-primary text-sm mt-3" onClick={() => navigate('/learning-paths')}>
+                Start your first analysis
+              </button>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {skills.slice(0, 3).map((item) => (
+                <LearningPathCard
+                  key={item.skillId}
+                  item={item}
+                  onOpen={(it) => navigate(`/learning-paths?analysis=${it.skillId}`)}
+                  onDelete={setToDelete}
+                />
+              ))}
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Step indicator */}
-        {step < 3 && (
-          <div className="flex items-center gap-2 mb-8">
-            {STEPS.slice(0, 3).map((label, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-colors ${
-                  i < step ? 'bg-brand-500 text-white' :
-                  i === step ? 'bg-brand-100 text-brand-700 ring-2 ring-brand-500' :
-                  'bg-gray-100 text-gray-400'
-                }`}>
-                  {i < step ? '✓' : i + 1}
-                </div>
-                <span className={`text-sm ${i === step ? 'font-medium text-ink' : 'text-gray-400'}`}>{label}</span>
-                {i < 2 && <div className="w-8 h-px bg-gray-200 mx-1" />}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── Step 0: Role info ── */}
-        {step === 0 && (
-          <div className="card max-w-lg">
-            <h2 className="font-semibold text-ink mb-4">Tell us about your role</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="label">Employee ID</label>
-                <input
-                  className="input"
-                  placeholder="e.g. EMP001"
-                  value={employeeId}
-                  onChange={e => setEmployeeId(e.target.value.toUpperCase())}
-                />
-                <p className="text-xs text-gray-400 mt-1">Your organization employee ID</p>
-              </div>
-              <div>
-                <label className="label">Your current role</label>
-                <input
-                  className="input"
-                  placeholder="e.g. Senior Java Developer"
-                  value={currentRole}
-                  onChange={e => setCurrentRole(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="label">Your target role</label>
-                <input
-                  className="input"
-                  placeholder="e.g. AI Solution Architect"
-                  value={targetRole}
-                  onChange={e => setTargetRole(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2 mt-4">{error}</p>}
-
-            <div className="flex gap-3 mt-6">
-              {/* Load existing profile button */}
-              <button
-                className="btn-ghost border border-gray-200 flex items-center gap-2"
-                disabled={!employeeId.trim() || loading}
-                onClick={handleLoadExisting}
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-                ) : '↓'}
-                Load existing
-              </button>
-
-              {/* New analysis button */}
-              <button
-                className="btn-primary"
-                disabled={!currentRole.trim() || !targetRole.trim() || !employeeId.trim()}
-                onClick={() => { setError(''); setStep(1) }}
-              >
-                Analyze new →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 1: Self assessment ── */}
-        {step === 1 && (
-          <div className="card">
-            <h2 className="font-semibold text-ink mb-1">Rate your skills</h2>
-            <p className="text-sm text-gray-500 mb-5">
-              Be honest — this is merged with what we extract from your resume.
-            </p>
-            <SelfAssessmentInput value={selfAssessment} onChange={setSelfAssessment} />
-            <div className="flex gap-3 mt-6">
-              <button className="btn-ghost" onClick={() => setStep(0)}>← Back</button>
-              <button
-                className="btn-primary"
-                disabled={Object.keys(selfAssessment).length === 0}
-                onClick={() => setStep(2)}
-              >
-                Continue →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 2: Resume upload ── */}
-        {step === 2 && (
-          <div className="card max-w-lg">
-            <h2 className="font-semibold text-ink mb-1">Upload your resume</h2>
-            <p className="text-sm text-gray-500 mb-5">PDF or DOCX, max 10 MB</p>
-
-            <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition-colors ${
-              resumeFile ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
-            }`}>
-              <input
-                type="file"
-                accept=".pdf,.docx"
-                className="hidden"
-                onChange={e => setResumeFile(e.target.files[0] || null)}
-              />
-              {resumeFile ? (
-                <>
-                  <svg className="w-8 h-8 text-brand-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="font-medium text-brand-700 text-sm">{resumeFile.name}</p>
-                  <p className="text-xs text-brand-500 mt-1">{(resumeFile.size / 1024).toFixed(0)} KB — click to change</p>
-                </>
-              ) : (
-                <>
-                  <svg className="w-8 h-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF or DOCX</p>
-                </>
-              )}
-            </label>
-
-            {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
-
-            <div className="flex gap-3 mt-6">
-              <button className="btn-ghost" onClick={() => setStep(1)}>← Back</button>
-              <button
-                className="btn-primary flex items-center gap-2"
-                disabled={!resumeFile || analyzing}
-                onClick={handleAnalyze}
-              >
-                {analyzing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Analyzing with AI…
-                  </>
-                ) : 'Analyze my skills →'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 3: Results ── */}
-        {step === 3 && profile && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="font-semibold text-ink">Skill Profile</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Employee ID: {profile.employeeId}</p>
-              </div>
-              <button
-                className="btn-ghost text-sm"
-                onClick={() => { setStep(0); setProfile(null); setResumeFile(null); setError('') }}
-              >
-                ← New analysis
-              </button>
-            </div>
-            <SkillProfileCard profile={profile} />
-          </div>
-        )}
-      </main>
+      <ConfirmDialog
+        open={!!toDelete}
+        destructive
+        title="Delete assessment?"
+        message="This permanently removes the assessment and its uploaded resume. This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   )
 }

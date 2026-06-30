@@ -1,289 +1,107 @@
-# Employee Skill Profiler
+# AI-Tutor — Employee Skill Profiler
 
-AI-powered employee skill analysis service. Employees upload their resume and self-assess their skills — Gemini AI extracts skills, classifies their role, and identifies gaps against their target role.
+Role-based skill-intelligence platform. Managers/employees upload a resume and
+self-assess; Google Gemini extracts skills, checks role alignment, and computes
+skill gaps vs a target role. Admins manage users.
+
+**Stack:** React + Vite · FastAPI · Supabase (Postgres + Auth + Storage) · Gemini
+(`gemini-2.5-flash`).
+**Hosting:** Vercel (frontend) · Render (backend) · Supabase · Google Gemini.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for diagrams and [BUILD.md](BUILD.md) for run/stop commands.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    FE["React SPA"] -->|Bearer JWT| BE["FastAPI"]
+    FE -->|sign in| AUTH["Supabase Auth"]
+    BE -->|verify JWT| AUTH
+    BE -->|service role| DB[("Supabase Postgres")]
+    BE -->|resumes| STORE[["Supabase Storage"]]
+    BE -->|prompts| LLM["Google Gemini"]
 ```
-Frontend (React + Vite)  →  FastAPI Backend  →  Gemini AI (LLM)
-        ↓                         ↓
-  Supabase Auth            Supabase DB + Storage
-```
 
-**Hosted free on:**
-- Frontend → Vercel
-- Backend → Render.com
-- DB + Auth + Storage → Supabase
-- LLM → Google Gemini (free tier)
+## Roles
 
----
+| Capability | Admin | Manager | Employee |
+|---|:--:|:--:|:--:|
+| Create managers | ✅ | — | — |
+| Create employees | ✅ | ✅ (auto-report) | — |
+| Delete users | ✅ | own reports | — |
+| Run skill analysis | — | ✅ | ✅ |
+| Edit own username / password | ✅ | ✅ | ✅ |
 
-## Step 1 — Create a Supabase project (Database + Auth + Storage)
+## How it works
 
-1. Go to https://supabase.com and click **Start your project**
-2. Sign up with GitHub (free)
-3. Click **New project** → choose a name (e.g. `skill-profiler`) → set a DB password → pick a region → **Create project**
-4. Wait ~2 minutes for it to provision
+1. First boot seeds an Admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (idempotent).
+2. Admin/Managers create users (password defaults to `123456` if left blank).
+3. Managers/Employees run **Learning Paths → New Analysis** (Resume → Roles → Self-assessment → Review).
+4. Backend parses the resume and runs a 5-stage Gemini pipeline (extract → consolidate → infer role → align → gaps), stores the resume, and saves results to `user_skill_details`.
+5. Skill gaps are stored as `[{ "skill": "SQL", "requiredLevel": 10 }]` (target proficiency needed).
 
-### Get your Supabase keys
+## Quick start
 
-In your project dashboard → **Settings → API**:
+**1. Supabase** — create a project, run `supabase/schema.sql` in the SQL Editor,
+add a private Storage bucket named `resumes`. Copy URL + anon + service-role + JWT secret.
 
-| What you need | Where to find it |
-|---|---|
-| `SUPABASE_URL` | "Project URL" |
-| `SUPABASE_ANON_KEY` | "anon public" key |
-| `SUPABASE_SERVICE_ROLE_KEY` | "service_role" key (keep this secret!) |
-| `SUPABASE_JWT_SECRET` | Settings → API → JWT Settings → "JWT Secret" |
+**2. Gemini** — get a key at https://aistudio.google.com → `GEMINI_API_KEY`.
 
-### Run the database schema
-
-1. In Supabase dashboard → **SQL Editor → New query**
-2. Paste the contents of `supabase/schema.sql`
-3. Click **Run**
-
-### Create the storage bucket
-
-1. Supabase dashboard → **Storage → New bucket**
-2. Name: `resumes`
-3. Public: **OFF** (private)
-4. Click **Save**
-
-### Enable email auth
-
-1. Supabase dashboard → **Authentication → Providers**
-2. Ensure **Email** is enabled (it is by default)
-3. For development, go to **Authentication → Email Templates** and disable email confirmation if you want instant login (optional)
-
----
-
-## Step 2 — Get a Gemini API key (free)
-
-1. Go to https://aistudio.google.com
-2. Sign in with your Google account
-3. Click **Get API key → Create API key**
-4. Copy the key — this is your `GEMINI_API_KEY`
-
-Free tier gives you: 15 RPM, 1M tokens/day (more than enough for MVP)
-
----
-
-## Step 3 — Run the backend locally
-
-### Prerequisites
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — install with:
-  ```bash
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  ```
-
-### Setup
-
+**3. Backend**
 ```bash
 cd backend
-
-# Copy env file and fill in your keys
-cp .env.example .env
-# Edit .env with your Supabase and Gemini keys
-
-# Install dependencies with uv
-uv sync
-
-# Run the dev server
+cp .env.example .env          # fill in keys (see Env vars)
+uv sync                       # no uv? python -m venv .venv && .venv/Scripts/python -m pip install -e .
 uv run uvicorn app.main:app --reload --port 8000
 ```
+API → http://localhost:8000 · docs → `/docs`.
 
-The API is now live at http://localhost:8000
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
----
-
-## Step 4 — Run the frontend locally
-
-### Prerequisites
-- Node.js 18+ and npm
-
+**4. Frontend**
 ```bash
 cd frontend
-
-# Copy env file and fill in your keys
-cp .env.example .env
-# Edit .env:
-#   VITE_SUPABASE_URL = your Supabase project URL
-#   VITE_SUPABASE_ANON_KEY = your Supabase anon key
-#   VITE_API_URL = http://localhost:8000
-
-# Install and run
-npm install
-npm run dev
+cp .env.example .env          # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
+npm install && npm run dev
 ```
+App → http://localhost:5173.
 
-Frontend is now at http://localhost:5173
+## Env vars
 
----
+- **Backend:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`, `GEMINI_MODEL` (optional), `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `CORS_ORIGINS`, `APP_ENV`.
+- **Frontend:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`.
 
-## Step 5 — Deploy the backend to Render (free)
+## API
 
-1. Push your code to GitHub
-2. Go to https://render.com → Sign up (free)
-3. Click **New → Web Service**
-4. Connect your GitHub repo
-5. Settings:
-   - **Root directory:** `backend`
-   - **Build command:** `pip install uv && uv sync`
-   - **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - **Instance type:** Free
-6. Add environment variables (from your `.env`):
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_JWT_SECRET`
-   - `GEMINI_API_KEY`
-   - `APP_ENV` = `production`
-   - `CORS_ORIGINS` = `https://your-app.vercel.app` (update after Step 6)
-7. Click **Create Web Service**
+Base `/api/v1` · Auth `Authorization: Bearer <Supabase JWT>`.
 
-> ⚠️ Free Render services sleep after 15 minutes of inactivity. First request after sleep takes ~30s to wake up. Fine for MVP.
+| Method | Path | Roles | Purpose |
+|---|---|---|---|
+| GET | `/me` | All | Current profile |
+| PATCH | `/me` | All | Update own username |
+| GET | `/job-roles` | All | Role options |
+| POST | `/skill-analysis` | Manager, Employee | Run + save analysis |
+| GET | `/skill-analysis` | Manager, Employee | List own analyses |
+| GET | `/skill-analysis/{id}` | Manager, Employee | One analysis |
+| DELETE | `/skill-analysis/{id}` | Manager, Employee | Delete own analysis |
+| GET | `/users` | Admin, Manager | List users |
+| POST | `/users` | Admin, Manager | Create user |
+| DELETE | `/users/{id}` | Admin, Manager | Delete user |
+| POST | `/auth/reset-password` | All | Reset own password |
+| GET | `/health` | — | Health check |
 
-Note your Render URL (e.g. `https://skill-profiler-api.onrender.com`)
+## Database
 
----
+`users` (profile keyed to `auth.users.id`) and `user_skill_details` (one row per
+analysis). Backend uses the service-role key (bypasses RLS). Resumes live in the
+private `resumes` bucket at `{skill_id}/resume.<ext>`. Schema: `supabase/schema.sql`.
 
-## Step 6 — Deploy the frontend to Vercel (free)
+## Deploy
 
-1. Go to https://vercel.com → Sign up with GitHub
-2. Click **New Project → Import** your repo
-3. Set **Root directory** to `frontend`
-4. Add environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_API_URL` = your Render URL from Step 5
-5. Click **Deploy**
+- **Backend → Render:** root `backend`, start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, set the backend env vars.
+- **Frontend → Vercel:** root `frontend`, set the `VITE_*` env vars, then point `CORS_ORIGINS` at the Vercel URL.
 
-After deploy, copy your Vercel URL and update `CORS_ORIGINS` in your Render env vars.
-
----
-
-## API Reference
-
-### POST /api/v1/skills/analyze
-
-Analyzes employee skills from resume + self-assessment.
-
-**Auth:** Bearer JWT (from Supabase)  
-**Content-Type:** multipart/form-data
-
-| Field | Type | Description |
-|---|---|---|
-| `employeeId` | string | Unique employee identifier |
-| `currentRole` | string | Employee's current role |
-| `targetRole` | string | Desired target role |
-| `resume` | file | PDF or DOCX resume |
-| `selfAssessment` | JSON string | `{"Java": 8, "AWS": 5}` |
-
-**Response:**
-```json
-{
-  "analysisId": "ANL-A1B2C3D4",
-  "employeeId": "EMP001",
-  "providedRole": "Senior Java Developer",
-  "inferredRole": "Senior Backend Engineer",
-  "targetRole": "AI Solution Architect",
-  "skills": { "Java": 8, "Spring Boot": 8, "AWS": 6 },
-  "skillGaps": ["Python", "Machine Learning", "RAG", "LLM"],
-  "roleAlignment": "ALIGNED",
-  "analyzedAt": "2026-06-25T12:30:00Z",
-  "status": "COMPLETED"
-}
-```
-
----
-
-### GET /api/v1/employees/{employeeId}/skills
-
-Retrieves the latest skill profile for an employee.
-
-**Auth:** Bearer JWT
-
-**Response:**
-```json
-{
-  "employeeId": "EMP001",
-  "providedRole": "Senior Java Developer",
-  "inferredRole": "Senior Backend Engineer",
-  "targetRole": "AI Solution Architect",
-  "skills": { "Java": 8, "Spring Boot": 8 },
-  "skillGaps": ["Python", "Machine Learning"],
-  "roleAlignment": "ALIGNED",
-  "lastUpdated": "2026-06-25T12:30:00Z"
-}
-```
-
----
-
-## Project Structure
+## Structure
 
 ```
-skill-profiler/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── skills.py          # API endpoints
-│   │   ├── core/
-│   │   │   ├── auth.py            # JWT validation
-│   │   │   ├── config.py          # Settings
-│   │   │   └── supabase_client.py # DB client
-│   │   ├── services/
-│   │   │   ├── gemini_service.py  # All AI logic
-│   │   │   ├── resume_parser.py   # PDF/DOCX text extraction
-│   │   │   ├── storage_service.py # Resume file upload
-│   │   │   └── db_service.py      # DB read/write
-│   │   ├── schemas/
-│   │   │   └── skill.py           # Pydantic models
-│   │   └── main.py                # FastAPI app
-│   ├── pyproject.toml
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── AuthPage.jsx       # Login / Register
-│   │   │   └── Dashboard.jsx      # Main 3-step flow + results
-│   │   ├── components/
-│   │   │   ├── SelfAssessmentInput.jsx
-│   │   │   └── SkillProfileCard.jsx
-│   │   ├── hooks/
-│   │   │   └── useAuth.jsx        # Auth context
-│   │   ├── services/
-│   │   │   ├── api.js             # Backend API calls
-│   │   │   └── supabase.js        # Supabase client
-│   │   └── main.jsx
-│   └── .env.example
-├── supabase/
-│   └── schema.sql                 # Run this in Supabase SQL Editor
-└── render.yaml                    # Render deployment config
+backend/app/  main.py · api/(skills,users) · core/(auth,config,constants,supabase_client) · schemas/ · services/(gemini,resume_parser,storage,user,db,seed)
+frontend/src/ App.jsx · pages/ · components/(ui,layout,users,skills) · hooks/ · services/ · constants/
 ```
-
----
-
-## What Gemini Does (AI Pipeline)
-
-For each analysis request, five Gemini calls are made:
-
-1. **Skill Extraction** — reads resume text, outputs `{"Java": 8, "AWS": 6, ...}`
-2. **Skill Consolidation** — merges resume skills + self-assessment (averages overlaps)
-3. **Role Inference** — classifies current role from skill pattern
-4. **Role Alignment** — checks if declared role matches inferred role
-5. **Gap Analysis** — identifies skills missing or below level 6 for target role
-
-All results are stored in Supabase for retrieval by downstream teams (Learning Recommendation, AI Tutor, Assessment Engine).
-
----
-
-## For Downstream Teams
-
-Your team's API consumer credentials:
-- Use `GET /api/v1/employees/{employeeId}/skills` to fetch any employee's latest profile
-- You'll need a valid JWT — coordinate with Team 1 for a service account token
-- Output format is stable — `skills`, `skillGaps`, `targetRole`, `roleAlignment` are guaranteed fields
