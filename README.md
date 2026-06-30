@@ -1,140 +1,289 @@
-# CodeLift-AI
+# Employee Skill Profiler
 
-A powerful code migration agent that automates the process of upgrading codebases to newer versions of programming languages and frameworks.
+AI-powered employee skill analysis service. Employees upload their resume and self-assess their skills — Gemini AI extracts skills, classifies their role, and identifies gaps against their target role.
 
-## Overview
+## Architecture
 
-CodeLift-AI is an intelligent migration assistant designed to help developers migrate their entire codebase to a specified version of a language or framework. Instead of manually refactoring code, the agent analyzes your project, generates a comprehensive migration plan, and provides detailed guidance for the upgrade process.
+```
+Frontend (React + Vite)  →  FastAPI Backend  →  Gemini AI (LLM)
+        ↓                         ↓
+  Supabase Auth            Supabase DB + Storage
+```
 
-## Features
+**Hosted free on:**
+- Frontend → Vercel
+- Backend → Render.com
+- DB + Auth + Storage → Supabase
+- LLM → Google Gemini (free tier)
 
-- **Intelligent Analysis**: Scans your codebase to understand the current language/framework version and dependencies
-- **Migration Planning**: Generates detailed migration plans tailored to your specific codebase
-- **Multi-Language Support**: Supports migration for various programming languages and frameworks
-- **Version Flexibility**: Can target any version specified by the user
-- **Comprehensive Guidance**: Provides step-by-step migration instructions and code transformation recommendations
-- **Dependency Management**: Identifies and handles framework/library dependency updates
-- **Impact Assessment**: Evaluates breaking changes and potential issues during migration
+---
 
-## How It Works
+## Step 1 — Create a Supabase project (Database + Auth + Storage)
 
-1. **Input Collection**: User provides:
-   - Current codebase (repository or directory)
-   - Target language/framework version
-   - Migration preferences and constraints
+1. Go to https://supabase.com and click **Start your project**
+2. Sign up with GitHub (free)
+3. Click **New project** → choose a name (e.g. `skill-profiler`) → set a DB password → pick a region → **Create project**
+4. Wait ~2 minutes for it to provision
 
-2. **Codebase Analysis**: The agent:
-   - Analyzes the existing codebase structure
-   - Identifies the current version of language/framework
-   - Detects dependencies and third-party libraries
-   - Maps deprecated APIs and breaking changes
+### Get your Supabase keys
 
-3. **Migration Planning**: Generates a comprehensive plan including:
-   - Step-by-step migration stages
-   - Code transformation recommendations
-   - Dependency updates required
-   - Testing strategy
+In your project dashboard → **Settings → API**:
 
-4. **User Approval**: Presents the migration plan to the user for:
-   - Review of proposed changes
-   - Validation of migration strategy
-   - Approval to proceed with execution
+| What you need | Where to find it |
+|---|---|
+| `SUPABASE_URL` | "Project URL" |
+| `SUPABASE_ANON_KEY` | "anon public" key |
+| `SUPABASE_SERVICE_ROLE_KEY` | "service_role" key (keep this secret!) |
+| `SUPABASE_JWT_SECRET` | Settings → API → JWT Settings → "JWT Secret" |
 
-5. **Plan Execution**: Upon user approval, the agent:
-   - Executes the migration plan automatically
-   - Transforms code according to the planned stages
-   - Updates dependencies and configurations
-   - Generates a detailed execution report
+### Run the database schema
 
-## Getting Started
+1. In Supabase dashboard → **SQL Editor → New query**
+2. Paste the contents of `supabase/schema.sql`
+3. Click **Run**
+
+### Create the storage bucket
+
+1. Supabase dashboard → **Storage → New bucket**
+2. Name: `resumes`
+3. Public: **OFF** (private)
+4. Click **Save**
+
+### Enable email auth
+
+1. Supabase dashboard → **Authentication → Providers**
+2. Ensure **Email** is enabled (it is by default)
+3. For development, go to **Authentication → Email Templates** and disable email confirmation if you want instant login (optional)
+
+---
+
+## Step 2 — Get a Gemini API key (free)
+
+1. Go to https://aistudio.google.com
+2. Sign in with your Google account
+3. Click **Get API key → Create API key**
+4. Copy the key — this is your `GEMINI_API_KEY`
+
+Free tier gives you: 15 RPM, 1M tokens/day (more than enough for MVP)
+
+---
+
+## Step 3 — Run the backend locally
 
 ### Prerequisites
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — install with:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
 
-- Python 3.8+
-- Git
-- Target language/framework tools (e.g., Node.js for JavaScript migrations, Java for Java migrations)
-
-### Installation
-
-```bash
-git clone https://github.com/yourusername/CodeLift-AI.git
-cd CodeLift-AI
-pip install -r requirements.txt
-```
-
-### Usage
+### Setup
 
 ```bash
-python codelift_agent.py \
-  --repo /path/to/codebase \
-  --language python \
-  --target-version 3.11 \
-  --output migration_plan.json
+cd backend
+
+# Copy env file and fill in your keys
+cp .env.example .env
+# Edit .env with your Supabase and Gemini keys
+
+# Install dependencies with uv
+uv sync
+
+# Run the dev server
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-#### Parameters
+The API is now live at http://localhost:8000
 
-- `--repo`: Path to the codebase repository
-- `--language`: Programming language (e.g., `python`, `javascript`, `java`)
-- `--target-version`: Target version for migration
-- `--output`: Output file for migration plan (JSON format)
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
-## Example Output
+---
 
-The agent generates a detailed migration plan containing:
+## Step 4 — Run the frontend locally
 
+### Prerequisites
+- Node.js 18+ and npm
+
+```bash
+cd frontend
+
+# Copy env file and fill in your keys
+cp .env.example .env
+# Edit .env:
+#   VITE_SUPABASE_URL = your Supabase project URL
+#   VITE_SUPABASE_ANON_KEY = your Supabase anon key
+#   VITE_API_URL = http://localhost:8000
+
+# Install and run
+npm install
+npm run dev
+```
+
+Frontend is now at http://localhost:5173
+
+---
+
+## Step 5 — Deploy the backend to Render (free)
+
+1. Push your code to GitHub
+2. Go to https://render.com → Sign up (free)
+3. Click **New → Web Service**
+4. Connect your GitHub repo
+5. Settings:
+   - **Root directory:** `backend`
+   - **Build command:** `pip install uv && uv sync`
+   - **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance type:** Free
+6. Add environment variables (from your `.env`):
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_JWT_SECRET`
+   - `GEMINI_API_KEY`
+   - `APP_ENV` = `production`
+   - `CORS_ORIGINS` = `https://your-app.vercel.app` (update after Step 6)
+7. Click **Create Web Service**
+
+> ⚠️ Free Render services sleep after 15 minutes of inactivity. First request after sleep takes ~30s to wake up. Fine for MVP.
+
+Note your Render URL (e.g. `https://skill-profiler-api.onrender.com`)
+
+---
+
+## Step 6 — Deploy the frontend to Vercel (free)
+
+1. Go to https://vercel.com → Sign up with GitHub
+2. Click **New Project → Import** your repo
+3. Set **Root directory** to `frontend`
+4. Add environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_API_URL` = your Render URL from Step 5
+5. Click **Deploy**
+
+After deploy, copy your Vercel URL and update `CORS_ORIGINS` in your Render env vars.
+
+---
+
+## API Reference
+
+### POST /api/v1/skills/analyze
+
+Analyzes employee skills from resume + self-assessment.
+
+**Auth:** Bearer JWT (from Supabase)  
+**Content-Type:** multipart/form-data
+
+| Field | Type | Description |
+|---|---|---|
+| `employeeId` | string | Unique employee identifier |
+| `currentRole` | string | Employee's current role |
+| `targetRole` | string | Desired target role |
+| `resume` | file | PDF or DOCX resume |
+| `selfAssessment` | JSON string | `{"Java": 8, "AWS": 5}` |
+
+**Response:**
 ```json
 {
-  "project": "sample-project",
-  "current_version": "3.8",
-  "target_version": "3.11",
-  "estimated_effort": "Medium",
-  "migration_stages": [
-    {
-      "stage": 1,
-      "title": "Dependency Updates",
-      "description": "Update all dependencies to versions compatible with Python 3.11",
-      "actions": [...]
-    },
-    {
-      "stage": 2,
-      "title": "Syntax Updates",
-      "description": "Update deprecated syntax and API calls",
-      "actions": [...]
-    }
-  ]
+  "analysisId": "ANL-A1B2C3D4",
+  "employeeId": "EMP001",
+  "providedRole": "Senior Java Developer",
+  "inferredRole": "Senior Backend Engineer",
+  "targetRole": "AI Solution Architect",
+  "skills": { "Java": 8, "Spring Boot": 8, "AWS": 6 },
+  "skillGaps": ["Python", "Machine Learning", "RAG", "LLM"],
+  "roleAlignment": "ALIGNED",
+  "analyzedAt": "2026-06-25T12:30:00Z",
+  "status": "COMPLETED"
 }
 ```
 
-## Supported Languages & Frameworks
+---
 
-- **Python** (2.7 → 3.x)
-- **JavaScript/TypeScript** (various versions)
-- **Java** (various LTS versions)
-- More languages coming soon!
+### GET /api/v1/employees/{employeeId}/skills
+
+Retrieves the latest skill profile for an employee.
+
+**Auth:** Bearer JWT
+
+**Response:**
+```json
+{
+  "employeeId": "EMP001",
+  "providedRole": "Senior Java Developer",
+  "inferredRole": "Senior Backend Engineer",
+  "targetRole": "AI Solution Architect",
+  "skills": { "Java": 8, "Spring Boot": 8 },
+  "skillGaps": ["Python", "Machine Learning"],
+  "roleAlignment": "ALIGNED",
+  "lastUpdated": "2026-06-25T12:30:00Z"
+}
+```
+
+---
 
 ## Project Structure
 
 ```
-CodeLift-AI/
-├── README.md
-├── requirements.txt
-├── codelift_agent.py
-├── src/
-│   ├── analyzer/
-│   ├── planner/
-│   └── recommender/
-└── tests/
+skill-profiler/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── skills.py          # API endpoints
+│   │   ├── core/
+│   │   │   ├── auth.py            # JWT validation
+│   │   │   ├── config.py          # Settings
+│   │   │   └── supabase_client.py # DB client
+│   │   ├── services/
+│   │   │   ├── gemini_service.py  # All AI logic
+│   │   │   ├── resume_parser.py   # PDF/DOCX text extraction
+│   │   │   ├── storage_service.py # Resume file upload
+│   │   │   └── db_service.py      # DB read/write
+│   │   ├── schemas/
+│   │   │   └── skill.py           # Pydantic models
+│   │   └── main.py                # FastAPI app
+│   ├── pyproject.toml
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── AuthPage.jsx       # Login / Register
+│   │   │   └── Dashboard.jsx      # Main 3-step flow + results
+│   │   ├── components/
+│   │   │   ├── SelfAssessmentInput.jsx
+│   │   │   └── SkillProfileCard.jsx
+│   │   ├── hooks/
+│   │   │   └── useAuth.jsx        # Auth context
+│   │   ├── services/
+│   │   │   ├── api.js             # Backend API calls
+│   │   │   └── supabase.js        # Supabase client
+│   │   └── main.jsx
+│   └── .env.example
+├── supabase/
+│   └── schema.sql                 # Run this in Supabase SQL Editor
+└── render.yaml                    # Render deployment config
 ```
 
-## Contributing
+---
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## What Gemini Does (AI Pipeline)
 
-## License
+For each analysis request, five Gemini calls are made:
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. **Skill Extraction** — reads resume text, outputs `{"Java": 8, "AWS": 6, ...}`
+2. **Skill Consolidation** — merges resume skills + self-assessment (averages overlaps)
+3. **Role Inference** — classifies current role from skill pattern
+4. **Role Alignment** — checks if declared role matches inferred role
+5. **Gap Analysis** — identifies skills missing or below level 6 for target role
 
-## Contact
+All results are stored in Supabase for retrieval by downstream teams (Learning Recommendation, AI Tutor, Assessment Engine).
 
-For questions or feedback, please open an issue on GitHub.
+---
+
+## For Downstream Teams
+
+Your team's API consumer credentials:
+- Use `GET /api/v1/employees/{employeeId}/skills` to fetch any employee's latest profile
+- You'll need a valid JWT — coordinate with Team 1 for a service account token
+- Output format is stable — `skills`, `skillGaps`, `targetRole`, `roleAlignment` are guaranteed fields
