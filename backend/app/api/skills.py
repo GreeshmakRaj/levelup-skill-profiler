@@ -1,32 +1,79 @@
 import json
 from datetime import datetime
+
 from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, status
-from app.core.auth import get_current_user
-from app.schemas.skill import AnalyzeResponse, SkillProfileResponse
+
+from app.core.auth import get_current_user, require_roles
+from app.core.constants import Role
+from app.schemas.skill import SkillDetailResponse
 from app.services.resume_parser import extract_text_from_resume
 from app.services.gemini_service import run_full_analysis
-from app.services.storage_service import upload_resume
-from app.services.db_service import save_analysis, get_latest_profile
+from app.services.storage_service import upload_resume, delete_resumes
+from app.services import db_service
 
 router = APIRouter(prefix="/api/v1", tags=["Skills"])
 
+# Managers and Employees may run / manage assessments. Admins may not.
+require_assessor = require_roles(Role.MANAGER, Role.EMPLOYEE)
+
+
+def _normalize_gaps(value) -> list[dict]:
+    """Coerce stored skills_gap_analysis into a list of {skill, requiredLevel}.
+
+    Handles the current format (list of objects) and older formats
+    (list of strings, or {"skillGaps": [...], "requiredSkills": [...]}).
+    """
+    if isinstance(value, dict):
+        value = value.get("skillGaps", [])
+    gaps: list[dict] = []
+    for g in value or []:
+        if isinstance(g, dict) and g.get("skill"):
+            level = g.get("requiredLevel")
+            gaps.append({
+                "skill": str(g["skill"]),
+                "requiredLevel": int(level) if isinstance(level, (int, float)) else 0,
+            })
+        elif isinstance(g, str):
+            gaps.append({"skill": g, "requiredLevel": 0})
+    return gaps
+
+
+def _to_response(row: dict) -> SkillDetailResponse:
+    # The users table is joined in via Supabase embed (key "users").
+    user = row.get("users") or {}
+    if isinstance(user, list):
+        user = user[0] if user else {}
+    return SkillDetailResponse(
+        skillId=row["skill_id"],
+        userId=row["user_id"],
+        username=user.get("username"),
+        email=user.get("gmail"),
+        currentRole=row.get("current_role") or "",
+        targetRole=row.get("targeted_role") or "",
+        skills=row.get("skills_assessment") or {},
+        skillGaps=_normalize_gaps(row.get("skills_gap_analysis")),
+        roleAlignment=row.get("role_alignment") or "ALIGNED",
+        resumePath=row.get("resume_path"),
+        status=row.get("is_skill_path_completed") or "COMPLETED",
+        createdAt=datetime.fromisoformat(row["created_at"]),
+    )
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# POST /api/v1/skills/analyze
-# ─────────────────────────────────────────────────────────────────────────────
+# POST /api/v1/skill-analysis  (Manager + Employee)
+# ────────────────────────────────────────────────────────────────
 
 @router.post(
-    "/skills/analyze",
-    response_model=AnalyzeResponse,
-    summary="Analyze employee skills from resume + self-assessment",
+    "/skill-analysis",
+    response_model=SkillDetailResponse,
+    summary="Analyze skills from resume + self-assessment and persist the result",
 )
 async def analyze_skills(
-    employeeId: str = Form(...),
     currentRole: str = Form(...),
     targetRole: str = Form(...),
     resume: UploadFile = File(...),
     selfAssessment: str = Form(...),
-    _user: dict = Depends(get_current_user),
+    user: dict = Depends(require_assessor),
 ):
     # 1. Parse self-assessment JSON string
     try:
@@ -47,11 +94,11 @@ async def analyze_skills(
             detail={"code": "INVALID_REQUEST", "message": "Could not extract text from resume. Ensure the file is not scanned or empty."},
         )
 
-    # 3. Upload resume to Supabase Storage (rewind first)
-    await resume.seek(0)
-    resume_path = await upload_resume(resume, employeeId)
+    # 3. Upload resume to Supabase Storage under {skill_id}/...
+    skill_id = db_service.new_skill_id()
+    resume_path = await upload_resume(resume, skill_id)
 
-    # 4. Run full Gemini analysis pipeline
+    # 4. Run the existing Gemini analysis pipeline (reused as-is)
     result = run_full_analysis(
         resume_text=resume_text,
         self_assessment=assessment,
@@ -59,59 +106,83 @@ async def analyze_skills(
         target_role=targetRole,
     )
 
-    # 5. Persist to DB
-    record = save_analysis(
-        employee_id=employeeId,
-        provided_role=currentRole,
-        inferred_role=result["inferred_role"],
-        target_role=targetRole,
-        skills=result["consolidated_skills"],
-        skill_gaps=result["skill_gaps"],
+    # 5. Persist to user_skill_details
+    db_service.insert_skill_details(
+        skill_id=skill_id,
+        user_id=user["sub"],
+        current_role=currentRole,
+        targeted_role=targetRole,
+        skills_assessment=result["consolidated_skills"],
+        skills_gap_analysis=result["skill_gap_analysis"],
         role_alignment=result["role_alignment"],
         resume_path=resume_path,
     )
 
-    return AnalyzeResponse(
-        analysisId=record["analysis_id"],
-        employeeId=employeeId,
-        providedRole=currentRole,
-        inferredRole=result["inferred_role"],
-        targetRole=targetRole,
-        skills=result["consolidated_skills"],
-        skillGaps=result["skill_gaps"],
-        roleAlignment=result["role_alignment"],
-        analyzedAt=datetime.fromisoformat(record["analyzed_at"]),
-        status="COMPLETED",
-    )
+    # Re-read with the users join so the response carries username + email.
+    row = db_service.get_skill_detail(skill_id)
+    return _to_response(row)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GET /api/v1/employees/{employeeId}/skills
-# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/v1/skill-analysis  – caller's own assessments (Manager + Employee)
+# ────────────────────────────────────────────────────────────────
 
 @router.get(
-    "/employees/{employeeId}/skills",
-    response_model=SkillProfileResponse,
-    summary="Retrieve latest skill profile for an employee",
+    "/skill-analysis",
+    response_model=list[SkillDetailResponse],
+    summary="List the caller's skill assessments (most recent first)",
 )
-def get_employee_skills(
-    employeeId: str,
-    _user: dict = Depends(get_current_user),
-):
-    profile = get_latest_profile(employeeId)
-    if not profile:
+def list_my_skills(user: dict = Depends(get_current_user)):
+    rows = db_service.list_skill_details(user["sub"])
+    return [_to_response(r) for r in rows]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/v1/skill-analysis/{skill_id}  – full record for one assessment (owner only)
+# ────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/skill-analysis/{skill_id}",
+    response_model=SkillDetailResponse,
+    summary="Get the full user_skill_details record for one of the caller's assessments",
+)
+def get_my_skill(skill_id: str, user: dict = Depends(get_current_user)):
+    row = db_service.get_skill_detail(skill_id)
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": f"No skill profile found for employee {employeeId}."},
+            detail={"code": "NOT_FOUND", "message": "Assessment not found."},
+        )
+    if row["user_id"] != user["sub"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "FORBIDDEN", "message": "You can only view your own assessments."},
+        )
+    return _to_response(row)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DELETE /api/v1/skill-analysis/{skill_id}  (owner: Manager + Employee)
+# ────────────────────────────────────────────────────────────────
+
+@router.delete(
+    "/skill-analysis/{skill_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete one of the caller's skill assessments (and its resume)",
+)
+def delete_my_skill(skill_id: str, user: dict = Depends(require_assessor)):
+    row = db_service.get_skill_detail(skill_id)
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "Assessment not found."},
+        )
+    if row["user_id"] != user["sub"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "FORBIDDEN", "message": "You can only delete your own assessments."},
         )
 
-    return SkillProfileResponse(
-        employeeId=profile["employee_id"],
-        providedRole=profile["provided_role"],
-        inferredRole=profile["inferred_role"],
-        targetRole=profile["target_role"],
-        skills=profile["skills"],
-        skillGaps=profile["skill_gaps"],
-        roleAlignment=profile["role_alignment"],
-        lastUpdated=datetime.fromisoformat(profile["analyzed_at"]),
-    )
+    delete_resumes([row["resume_path"]] if row.get("resume_path") else [])
+    db_service.delete_skill_detail_row(skill_id)
+    return None

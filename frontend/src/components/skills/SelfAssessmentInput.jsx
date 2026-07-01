@@ -1,10 +1,5 @@
 import { useState } from 'react'
-
-const PRESET_SKILLS = [
-  'Java', 'Python', 'JavaScript', 'TypeScript', 'React', 'Node.js',
-  'Spring Boot', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'MongoDB',
-  'Machine Learning', 'AI', 'LLM', 'RAG', 'Data Science',
-]
+import { PRESET_SKILLS } from '../../constants/roles'
 
 export default function SelfAssessmentInput({ value, onChange }) {
   const [newSkill, setNewSkill] = useState('')
@@ -39,7 +34,7 @@ export default function SelfAssessmentInput({ value, onChange }) {
               key={skill}
               type="button"
               onClick={() => addSkill(skill)}
-              className="text-xs px-3 py-1 border border-gray-200 rounded-full hover:border-brand-400 hover:text-brand-600 transition-colors"
+              className="text-xs px-3 py-1 border border-line rounded-full text-muted hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
             >
               + {skill}
             </button>
@@ -67,7 +62,7 @@ export default function SelfAssessmentInput({ value, onChange }) {
         <div className="space-y-3">
           {Object.entries(value).map(([skill, rating]) => (
             <div key={skill} className="flex items-center gap-3">
-              <span className="w-36 text-sm font-medium text-gray-700 shrink-0 truncate">{skill}</span>
+              <span className="w-36 text-sm font-medium text-ink shrink-0 truncate">{skill}</span>
               <input
                 type="range"
                 min={1}
@@ -76,13 +71,13 @@ export default function SelfAssessmentInput({ value, onChange }) {
                 onChange={e => setRating(skill, e.target.value)}
                 className="flex-1 accent-brand-500"
               />
-              <span className="w-24 text-right text-xs text-brand-700 font-mono shrink-0">
+              <span className="w-24 text-right text-xs text-brand-700 dark:text-brand-400 font-mono shrink-0">
                 {rating} – {ratingLabel(rating)}
               </span>
               <button
                 type="button"
                 onClick={() => removeSkill(skill)}
-                className="text-gray-300 hover:text-red-400 transition-colors shrink-0"
+                className="text-faint hover:text-red-400 transition-colors shrink-0"
                 title="Remove"
               >
                 ✕
@@ -93,7 +88,7 @@ export default function SelfAssessmentInput({ value, onChange }) {
       )}
 
       {Object.keys(value).length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-4">
+        <p className="text-sm text-faint text-center py-4">
           Add at least one skill above
         </p>
       )}

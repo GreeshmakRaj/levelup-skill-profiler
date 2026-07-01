@@ -1,7 +1,18 @@
 import json
+import logging
 import re
 import google.genai as genai
 from app.core.config import get_settings
+
+logger = logging.getLogger("gemini_service")
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 _client = None
 
@@ -13,11 +24,17 @@ def _get_client():
     return _client
 
 
-def _generate(prompt: str) -> str:
-    response = _get_client().models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
-    )
+def _generate(prompt: str, method: str = "unknown") -> str:
+    logger.info("LLM REQUEST  [%s]:\n%s", method, prompt)
+    try:
+        response = _get_client().models.generate_content(
+            model=get_settings().gemini_model,
+            contents=prompt
+        )
+    except Exception:
+        logger.exception("LLM CALL FAILED [%s]", method)
+        raise
+    logger.info("LLM RESPONSE [%s]:\n%s", method, response.text)
     return response.text
 
 
@@ -56,7 +73,7 @@ Resume text:
 \"\"\"
 """
     try:
-        return _parse_json(_generate(prompt))
+        return _parse_json(_generate(prompt, "extract_skills_from_resume"))
     except Exception:
         return {}
 
@@ -99,7 +116,7 @@ Skill profile:
 {json.dumps(skills, indent=2)}
 """
     try:
-        return _parse_json(_generate(prompt)).get("role", "Unknown")
+        return _parse_json(_generate(prompt, "infer_role")).get("role", "Unknown")
     except Exception:
         return "Unknown"
 
@@ -123,7 +140,7 @@ Return ONLY a JSON object with one key "alignment" whose value is either
 {{"alignment": "ALIGNED"}}
 """
     try:
-        return _parse_json(_generate(prompt)).get("alignment", "ALIGNED")
+        return _parse_json(_generate(prompt, "check_role_alignment")).get("alignment", "ALIGNED")
     except Exception:
         return "ALIGNED"
 
@@ -135,7 +152,7 @@ Return ONLY a JSON object with one key "alignment" whose value is either
 def analyse_skill_gaps(
     current_skills: dict[str, int],
     target_role: str,
-) -> list[str]:
+) -> list[dict]:
     prompt = f"""
 You are a senior technical career advisor with deep knowledge of industry
 standard skill requirements for every tech role.
@@ -148,17 +165,34 @@ Their target role is: "{target_role}"
 Tasks:
 1. List the core technical skills required to competently perform the role
    of "{target_role}" at a professional level.
-2. Identify skills from that list where the employee is MISSING the skill
-   entirely OR has a proficiency below 6.
+2. From that list, keep ONLY the skills that are SKILL GAPS — i.e. the employee
+   is MISSING the skill entirely OR has a proficiency below 6.
+3. For each skill gap, give the proficiency LEVEL REQUIRED for the target role
+   on a scale of 1 (beginner) to 10 (expert).
 
-Return ONLY a valid JSON object — no explanation, no markdown:
+Output Response : Return ONLY a valid JSON object — no explanation, no markdown.
+"skillGaps" must be an array of objects, each with a "skill" name and the
+integer "requiredLevel" (1-10):
 {{
-  "requiredSkills": ["Python", "Machine Learning", "LLM", "RAG", "Agentic AI"],
-  "skillGaps": ["Machine Learning", "RAG", "Agentic AI"]
+  "skillGaps": [
+    {{ "skill": "SQL", "requiredLevel": 10 }},
+    {{ "skill": "Python", "requiredLevel": 9 }}
+  ]
 }}
 """
     try:
-        return _parse_json(_generate(prompt)).get("skillGaps", [])
+        result = _parse_json(_generate(prompt, "analyse_skill_gaps"))
+        raw_gaps = result.get("skillGaps", []) if isinstance(result, dict) else result
+        gaps: list[dict] = []
+        for g in raw_gaps or []:
+            if not isinstance(g, dict) or not g.get("skill"):
+                continue
+            try:
+                level = int(g.get("requiredLevel"))
+            except (TypeError, ValueError):
+                level = 6
+            gaps.append({"skill": str(g["skill"]), "requiredLevel": max(1, min(10, level))})
+        return gaps
     except Exception:
         return []
 
@@ -177,12 +211,11 @@ def run_full_analysis(
     consolidated = consolidate_skills(resume_skills, self_assessment)
     inferred_role = infer_role(consolidated)
     alignment = check_role_alignment(provided_role, inferred_role)
-    gaps = analyse_skill_gaps(consolidated, target_role)
+    gap_analysis = analyse_skill_gaps(consolidated, target_role)
 
     return {
         "resume_skills": resume_skills,
         "consolidated_skills": consolidated,
-        "inferred_role": inferred_role,
         "role_alignment": alignment,
-        "skill_gaps": gaps,
+        "skill_gap_analysis": gap_analysis,
     }
