@@ -4,15 +4,21 @@
  */
 export default function Stepper({ steps, current }) {
   return (
-    <ol className="flex items-center w-full">
+    <ol className="grid w-full" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
       {steps.map((label, i) => {
         const done = i < current
         const active = i === current
         return (
-          <li key={label} className={`flex items-center ${i < steps.length - 1 ? 'flex-1' : ''}`}>
-            <div className="flex items-center gap-2 shrink-0">
+          <li key={label} className="relative min-w-0 px-1 text-center">
+            {i < steps.length - 1 && (
+              <div
+                className={`absolute left-1/2 right-[-50%] top-4 h-px ${done ? 'bg-brand-400' : 'bg-line'}`}
+                aria-hidden="true"
+              />
+            )}
+            <div className="relative z-10 flex flex-col items-center gap-2 min-w-0">
               <span
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-colors ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                   done
                     ? 'bg-brand-500 text-white'
                     : active
@@ -22,13 +28,14 @@ export default function Stepper({ steps, current }) {
               >
                 {done ? '✓' : i + 1}
               </span>
-              <span className={`hidden sm:block text-sm ${active ? 'font-medium text-ink' : 'text-faint'}`}>
+              <span
+                className={`hidden w-full max-w-28 break-words text-center text-xs leading-snug sm:block ${
+                  active ? 'font-medium text-ink' : 'text-faint'
+                }`}
+              >
                 {label}
               </span>
             </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-px mx-2 sm:mx-4 ${done ? 'bg-brand-400' : 'bg-line'}`} />
-            )}
           </li>
         )
       })}

@@ -28,6 +28,7 @@ class UserResponse(BaseModel):
     role: Role
     reportsTo: Optional[str] = None
     reportsToName: Optional[str] = None
+    assessmentCount: int = 0
     createdAt: datetime
 
 
@@ -52,3 +53,24 @@ class MeResponse(BaseModel):
     role: Role
     reportsTo: Optional[str] = None
     reportsToName: Optional[str] = None
+
+
+# ── Update user (admin) ────────────────────────────────────────────────────────
+
+class UpdateReportsToRequest(BaseModel):
+    reportsTo: str = Field(..., description="User ID of the new manager")
+
+
+# ── Login ─────────────────────────────────────────────────────────────────────
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class LoginResponse(BaseModel):
+    accessToken: str
+    refreshToken: Optional[str] = None
+    tokenType: str = "bearer"
+    expiresIn: Optional[int] = None
+    user: MeResponse

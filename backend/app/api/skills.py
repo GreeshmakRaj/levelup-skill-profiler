@@ -6,8 +6,9 @@ from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, s
 from app.core.auth import get_current_user, require_roles
 from app.core.constants import Role
 from app.schemas.skill import SkillDetailResponse
+from app.services.llm import LLMError, get_provider_info
 from app.services.resume_parser import extract_text_from_resume
-from app.services.gemini_service import run_full_analysis
+from app.services.skill_analysis_service import run_full_analysis
 from app.services.storage_service import upload_resume, delete_resumes
 from app.services import db_service
 
@@ -72,12 +73,12 @@ async def analyze_skills(
     currentRole: str = Form(...),
     targetRole: str = Form(...),
     resume: UploadFile = File(...),
-    selfAssessment: str = Form(...),
+    selfAssessment: str = Form(default="{}"),
     user: dict = Depends(require_assessor),
 ):
-    # 1. Parse self-assessment JSON string
+    # 1. Parse self-assessment JSON string (optional — defaults to no ratings)
     try:
-        assessment: dict[str, int] = json.loads(selfAssessment)
+        assessment: dict[str, int] = json.loads(selfAssessment or "{}")
         if not isinstance(assessment, dict):
             raise ValueError
     except (json.JSONDecodeError, ValueError):
@@ -98,16 +99,24 @@ async def analyze_skills(
     skill_id = db_service.new_skill_id()
     resume_path = await upload_resume(resume, skill_id)
 
-    # 4. Run the existing Gemini analysis pipeline (reused as-is)
-    result = run_full_analysis(
-        resume_text=resume_text,
-        self_assessment=assessment,
-        provided_role=currentRole,
-        target_role=targetRole,
-    )
+    # 4. Run the LLM analysis pipeline (async)
+    try:
+        result = await run_full_analysis(
+            resume_text=resume_text,
+            self_assessment=assessment,
+            provided_role=currentRole,
+            target_role=targetRole,
+        )
+    except LLMError as exc:
+        # Clean up uploaded resume since analysis failed
+        await delete_resumes([resume_path])
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "LLM_ERROR", "message": str(exc)},
+        )
 
     # 5. Persist to user_skill_details
-    db_service.insert_skill_details(
+    await db_service.insert_skill_details(
         skill_id=skill_id,
         user_id=user["sub"],
         current_role=currentRole,
@@ -119,8 +128,12 @@ async def analyze_skills(
     )
 
     # Re-read with the users join so the response carries username + email.
-    row = db_service.get_skill_detail(skill_id)
-    return _to_response(row)
+    row = await db_service.get_skill_detail(skill_id)
+    response = _to_response(row)
+    provider_info = get_provider_info()
+    response.llmProvider = provider_info["provider"]
+    response.llmModel = provider_info["model"]
+    return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -132,8 +145,8 @@ async def analyze_skills(
     response_model=list[SkillDetailResponse],
     summary="List the caller's skill assessments (most recent first)",
 )
-def list_my_skills(user: dict = Depends(get_current_user)):
-    rows = db_service.list_skill_details(user["sub"])
+async def list_my_skills(user: dict = Depends(get_current_user)):
+    rows = await db_service.list_skill_details(user["sub"])
     return [_to_response(r) for r in rows]
 
 
@@ -146,8 +159,8 @@ def list_my_skills(user: dict = Depends(get_current_user)):
     response_model=SkillDetailResponse,
     summary="Get the full user_skill_details record for one of the caller's assessments",
 )
-def get_my_skill(skill_id: str, user: dict = Depends(get_current_user)):
-    row = db_service.get_skill_detail(skill_id)
+async def get_my_skill(skill_id: str, user: dict = Depends(get_current_user)):
+    row = await db_service.get_skill_detail(skill_id)
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -170,8 +183,8 @@ def get_my_skill(skill_id: str, user: dict = Depends(get_current_user)):
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete one of the caller's skill assessments (and its resume)",
 )
-def delete_my_skill(skill_id: str, user: dict = Depends(require_assessor)):
-    row = db_service.get_skill_detail(skill_id)
+async def delete_my_skill(skill_id: str, user: dict = Depends(require_assessor)):
+    row = await db_service.get_skill_detail(skill_id)
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -183,6 +196,6 @@ def delete_my_skill(skill_id: str, user: dict = Depends(require_assessor)):
             detail={"code": "FORBIDDEN", "message": "You can only delete your own assessments."},
         )
 
-    delete_resumes([row["resume_path"]] if row.get("resume_path") else [])
-    db_service.delete_skill_detail_row(skill_id)
+    await delete_resumes([row["resume_path"]] if row.get("resume_path") else [])
+    await db_service.delete_skill_detail_row(skill_id)
     return None

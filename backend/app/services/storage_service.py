@@ -1,6 +1,6 @@
 from fastapi import UploadFile
 from app.core.constants import RESUME_BUCKET
-from app.core.supabase_client import get_supabase
+from app.core.supabase_client import get_async_supabase
 
 
 async def upload_resume(file: UploadFile, skill_id: str) -> str:
@@ -14,8 +14,8 @@ async def upload_resume(file: UploadFile, skill_id: str) -> str:
     ext = (file.filename or "resume").rsplit(".", 1)[-1].lower()
     path = f"{skill_id}/resume.{ext}"
 
-    sb = get_supabase()
-    sb.storage.from_(RESUME_BUCKET).upload(
+    sb = await get_async_supabase()
+    await sb.storage.from_(RESUME_BUCKET).upload(
         path,
         raw,
         {"content-type": file.content_type or "application/octet-stream"},
@@ -23,14 +23,13 @@ async def upload_resume(file: UploadFile, skill_id: str) -> str:
     return path
 
 
-def delete_resumes(paths: list[str]) -> None:
-    """Removes one or more resume objects from storage. Safe to call with []. """
+async def delete_resumes(paths: list[str]) -> None:
+    """Removes one or more resume objects from storage. Safe to call with []."""
     paths = [p for p in (paths or []) if p]
     if not paths:
         return
-    sb = get_supabase()
+    sb = await get_async_supabase()
     try:
-        sb.storage.from_(RESUME_BUCKET).remove(paths)
+        await sb.storage.from_(RESUME_BUCKET).remove(paths)
     except Exception:
-        # Object may already be gone; keep hard-delete idempotent.
         pass

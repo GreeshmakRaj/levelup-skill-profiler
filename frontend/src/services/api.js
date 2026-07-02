@@ -70,6 +70,9 @@ export const createUser = (payload) =>
 export const deleteUser = (userId) =>
   request(`/api/v1/users/${userId}`, { method: 'DELETE' })
 
+export const updateReportsTo = (userId, reportsTo) =>
+  request(`/api/v1/users/${userId}/reports-to`, { method: 'PATCH', body: { reportsTo } })
+
 // ── Skill assessments ─────────────────────────────────────────────────────────
 
 export async function analyzeSkills({ currentRole, targetRole, resume, selfAssessment }) {
