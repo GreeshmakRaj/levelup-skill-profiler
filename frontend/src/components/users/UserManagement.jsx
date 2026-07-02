@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
-import { listUsers, deleteUser } from '../../services/api'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { listUsers, deleteUser, updateReportsTo } from '../../services/api'
 import { ROLES, ROLE_LABELS } from '../../constants/roles'
 import { useToast } from '../ui/Toast'
 import UserFormModal from './UserFormModal'
@@ -36,6 +36,112 @@ function SortHeader({ label, field, sort, onSort, className = '' }) {
   )
 }
 
+// ── Manager picker dropdown ────────────────────────────────────────────────────
+function ManagerPicker({ user, managers, onClose, onSaved }) {
+  const [search, setSearch] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState(null)
+  const wrapRef = useRef(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    function handler(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  const filtered = managers.filter((m) => {
+    if (m.userId === user.userId) return false   // cannot report to self
+    const q = search.toLowerCase()
+    return !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+  })
+
+  async function pick(managerId) {
+    if (managerId === user.reportsTo || saving) return
+    setSaving(true)
+    try {
+      await updateReportsTo(user.userId, managerId)
+      setSavedId(managerId)
+      onSaved()
+      setTimeout(onClose, 900)
+    } catch (err) {
+      setSaving(false)
+      // bubble error upward via console; toast shown by caller
+      throw err
+    }
+  }
+
+  return (
+    <div
+      ref={wrapRef}
+      className="absolute z-50 left-0 mt-1 w-56 bg-card border border-line rounded-xl shadow-xl overflow-hidden animate-scaleIn"
+      style={{ top: '100%' }}
+    >
+      {/* Search */}
+      <div className="p-2 border-b border-line">
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-faint" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+          <input
+            ref={inputRef}
+            className="input py-1.5 text-xs pl-7 w-full"
+            placeholder="Search managers…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          />
+        </div>
+      </div>
+
+      {/* Manager list */}
+      <div className="max-h-52 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="text-xs text-muted text-center py-5">No managers found</p>
+        ) : filtered.map((m) => {
+          const isCurrent = m.userId === user.reportsTo
+          const isSaved = m.userId === savedId
+          return (
+            <button
+              key={m.userId}
+              onClick={() => pick(m.userId).catch(() => {})}
+              disabled={saving}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors
+                ${isCurrent ? 'bg-brand-500/10' : 'hover:bg-surface'}
+                ${saving ? 'cursor-not-allowed opacity-60' : ''}`}
+            >
+              <span className="w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                {(m.name[0] || '?').toUpperCase()}
+              </span>
+              <span className={`flex-1 truncate font-medium ${isCurrent ? 'text-brand-600 dark:text-brand-400' : 'text-ink'}`}>
+                {m.name}
+              </span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0
+                ${m.role === ROLES.ADMIN
+                  ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400'
+                  : 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400'}`}>
+                {ROLE_LABELS[m.role]}
+              </span>
+              {isSaved ? (
+                <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : isCurrent ? (
+                <svg className="w-3.5 h-3.5 text-brand-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function UserManagement({ creatorRole }) {
   const toast = useToast()
   const [users, setUsers] = useState([])
@@ -43,6 +149,8 @@ export default function UserManagement({ creatorRole }) {
   const [showForm, setShowForm] = useState(false)
   const [toDelete, setToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [reassigning, setReassigning] = useState(null) // userId being reassigned
+  const [successId, setSuccessId] = useState(null)    // userId that just got saved
 
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
@@ -61,10 +169,16 @@ export default function UserManagement({ creatorRole }) {
 
   useEffect(() => { load() }, [load])
 
-  const managers = users.filter((u) => u.role === ROLES.MANAGER).map((u) => ({
-    userId: u.userId,
-    name: fullName(u) || u.email,
-  }))
+  // Users that can be a reporting target: all Managers + all Admins.
+  // Self-exclusion is handled inside ManagerPicker.
+  const managers = users
+    .filter((u) => u.role === ROLES.MANAGER || u.role === ROLES.ADMIN)
+    .map((u) => ({
+      userId: u.userId,
+      name: fullName(u) || u.email,
+      email: u.email,
+      role: u.role,
+    }))
 
   const onSort = (field) =>
     setSort((s) => ({ field, dir: s.field === field && s.dir === 'asc' ? 'desc' : 'asc' }))
@@ -174,6 +288,7 @@ export default function UserManagement({ creatorRole }) {
                 <SortHeader label="Email" field="email" sort={sort} onSort={onSort} className="hidden sm:table-cell" />
                 <SortHeader label="Role" field="role" sort={sort} onSort={onSort} />
                 <SortHeader label="Reports To" field="reports" sort={sort} onSort={onSort} className="hidden md:table-cell" />
+                <th className="px-3 py-2.5 font-medium text-center hidden lg:table-cell">Assessments</th>
                 <th className="px-3 py-2.5 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -190,7 +305,55 @@ export default function UserManagement({ creatorRole }) {
                   </td>
                   <td className="px-3 py-3 text-muted hidden sm:table-cell">{u.email}</td>
                   <td className="px-3 py-3"><RoleBadge role={u.role} /></td>
-                  <td className="px-3 py-3 text-muted hidden md:table-cell">{u.reportsToName || '—'}</td>
+                  <td className="px-3 py-3 text-muted hidden md:table-cell">
+                    {creatorRole === ROLES.ADMIN && u.role !== ROLES.ADMIN ? (
+                      <div className="relative inline-block">
+                        {/* Success flash */}
+                        {successId === u.userId ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {u.reportsToName || '—'}
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1.5 cursor-pointer group"
+                            onClick={() => setReassigning(reassigning === u.userId ? null : u.userId)}
+                            title="Click to change manager"
+                          >
+                            <span className="group-hover:text-ink transition-colors">{u.reportsToName || '—'}</span>
+                            <svg className="w-3.5 h-3.5 text-faint group-hover:text-muted transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2.414a2 2 0 01.586-1.414z" />
+                            </svg>
+                          </span>
+                        )}
+                        {reassigning === u.userId && (
+                          <ManagerPicker
+                            user={u}
+                            managers={managers}
+                            onClose={() => setReassigning(null)}
+                            onSaved={() => {
+                              setSuccessId(u.userId)
+                              load()
+                              setTimeout(() => setSuccessId((id) => id === u.userId ? null : id), 2500)
+                            }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      u.reportsToName || '—'
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-center hidden lg:table-cell">
+                    {u.assessmentCount > 0 ? (
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-500/15 text-brand-600 dark:text-brand-400 text-xs font-semibold">
+                        {u.assessmentCount}
+                      </span>
+                    ) : (
+                      <span className="text-faint text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-3 text-right">
                     {u.role !== ROLES.ADMIN && (
                       <button
