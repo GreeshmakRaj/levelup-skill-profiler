@@ -1,45 +1,29 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
 
 
-# ── Shared ────────────────────────────────────────────────────────────────────
+# ── Skill gap shape ──────────────────────────────────────────────────────
 
-class SkillMap(BaseModel):
-    """skill_name -> proficiency rating 1-10"""
-    model_config = {"extra": "allow"}
+class SkillGap(BaseModel):
+    skill: str
+    requiredLevel: int        # target proficiency required (1-10)
 
 
-# ── POST /skills/analyze ──────────────────────────────────────────────────────
+# ── Shared skill-detail shape ────────────────────────────────────────────
 
-class AnalyzeResponse(BaseModel):
-    analysisId: str
-    employeeId: str
-    providedRole: str
-    inferredRole: str
+class SkillDetailResponse(BaseModel):
+    skillId: str
+    userId: str
+    username: str | None = None
+    email: str | None = None
+    currentRole: str
     targetRole: str
     skills: dict[str, int]
-    skillGaps: list[str]
+    skillGaps: list[SkillGap]
     roleAlignment: str          # "ALIGNED" | "MISALIGNED"
-    analyzedAt: datetime
-    status: str                 # "COMPLETED" | "FAILED"
+    resumePath: str | None = None
+    status: str                 # is_skill_path_completed
+    createdAt: datetime
+    llmProvider: str | None = None
+    llmModel: str | None = None
 
-
-# ── GET /employees/{id}/skills ────────────────────────────────────────────────
-
-class SkillProfileResponse(BaseModel):
-    employeeId: str
-    providedRole: str
-    inferredRole: str
-    targetRole: str
-    skills: dict[str, int]
-    skillGaps: list[str]
-    roleAlignment: str
-    lastUpdated: datetime
-
-
-# ── Error ─────────────────────────────────────────────────────────────────────
-
-class ErrorResponse(BaseModel):
-    code: str
-    message: str
