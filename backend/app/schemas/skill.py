@@ -24,4 +24,6 @@ class SkillDetailResponse(BaseModel):
     resumePath: str | None = None
     status: str                 # is_skill_path_completed
     createdAt: datetime
+    llmProvider: str | None = None
+    llmModel: str | None = None
 

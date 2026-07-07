@@ -9,7 +9,7 @@ import LearningPathCard from '../components/skills/LearningPathCard'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useToast } from '../components/ui/Toast'
 
-const STEPS = ['Upload Resume', 'Roles', 'Skill Assessment', 'Review']
+const STEPS = ['Upload Resume', 'Roles', 'Skill Assessment (optional)', 'Review']
 
 const emptyForm = { currentRole: '', targetRole: '', selfAssessment: {}, resume: null }
 
@@ -76,7 +76,7 @@ export default function LearningPaths() {
   const canNext = {
     0: !!form.resume,
     1: form.currentRole.trim() && form.targetRole.trim(),
-    2: Object.keys(form.selfAssessment).length > 0,
+    2: true, // self-assessment is optional
     3: true,
   }[step]
 
@@ -90,7 +90,10 @@ export default function LearningPaths() {
         resume: form.resume,
         selfAssessment: form.selfAssessment,
       })
-      toast.success('Skill gap analysis complete.')
+      const llmName = result.llmModel
+        ? `${result.llmProvider || 'LLM'} (${result.llmModel})`
+        : result.llmProvider || 'LLM'
+      toast.success(`Skill gap analysis complete using ${llmName}.`)
       setSelected(result)
       setView('detail')
       load()
@@ -200,8 +203,8 @@ export default function LearningPaths() {
             {/* Step 3 — Skill Assessment */}
             {step === 2 && (
               <div>
-                <h2 className="font-semibold text-ink mb-1">Rate your skills</h2>
-                <p className="text-sm text-muted mb-5">Merged with skills extracted from your resume.</p>
+                <h2 className="font-semibold text-ink mb-1">Rate your skills <span className="text-muted font-normal">(optional)</span></h2>
+                <p className="text-sm text-muted mb-5">Merged with skills extracted from your resume. Skip this step to rely on the resume alone.</p>
                 <SelfAssessmentInput value={form.selfAssessment} onChange={(v) => setField('selfAssessment', v)} />
               </div>
             )}

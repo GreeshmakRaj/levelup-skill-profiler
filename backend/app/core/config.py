@@ -1,5 +1,10 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings
+
+
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -7,8 +12,17 @@ class Settings(BaseSettings):
     supabase_anon_key: str
     supabase_service_role_key: str
     supabase_jwt_secret: str
-    gemini_api_key: str
-    gemini_model: str = "gemini-2.5-flash"
+
+    # ── LLM providers (loaded from backend/.env) ──
+    # Priority order (comma-separated). Free-tier friendly providers first.
+    llm_providers: str
+
+    gemini_api_key: str = ""
+    gemini_model: str = ""
+
+    groq_api_key: str = ""
+    groq_model: str = ""
+
     app_env: str = "development"
     cors_origins: str = "http://localhost:5173"
     # First-run admin seeding (secrets — supplied via .env / deploy env vars)
@@ -20,7 +34,7 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",")]
 
     class Config:
-        env_file = ".env"
+        env_file = str(_ENV_FILE)
         extra = "ignore"
 
 
