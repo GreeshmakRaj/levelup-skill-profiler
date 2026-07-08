@@ -9,9 +9,9 @@ import { useToast } from '@/global/components/Toast'
 import StatCard, { StatCardSkeleton, STAT_ICONS } from '../components/StatCard'
 import UserManagement from '../components/UserManagement'
 import { listUsers } from '../services/usersApi'
-import { listMySkills, deleteSkill } from '@/features/learning-paths/services/skillsApi'
+import { listMySkills, deleteSkill } from '@/modules/learning-paths/services/skillsApi'
 import ProfileSummaryCard from '../components/ProfileSummaryCard'
-import LearningPathCard from '@/features/learning-paths/components/LearningPathCard'
+import LearningPathCard from '@/modules/learning-paths/components/LearningPathCard'
 
 function PageHeader({ title, subtitle }) {
   return (

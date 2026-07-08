@@ -1,4 +1,4 @@
-import LearningPaths from '@/features/learning-paths/pages/LearningPaths'
+import LearningPaths from '@/modules/learning-paths/pages/LearningPaths'
 
 export default function LearningPathsPage() {
   return <LearningPaths />

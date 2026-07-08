@@ -6,7 +6,7 @@
       "@app/*": ["src/app/*"],
       "@global/*": ["src/global/*"],
       "@layouts/*": ["src/layouts/*"],
-      "@features/*": ["src/features/*"]
+      "@features/*": ["src/modules/*"]
     }
   },
   "include": ["src"],

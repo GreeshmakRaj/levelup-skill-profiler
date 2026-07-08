@@ -1,4 +1,4 @@
-import Roadmap from '@features/roadmap/pages/Roadmap'
+import Roadmap from '@/modules/roadmap/pages/Roadmap'
 
 export default function RoadmapPage() {
   return <Roadmap />
