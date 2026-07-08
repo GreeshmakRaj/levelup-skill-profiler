@@ -8,10 +8,14 @@ const ICONS = {
   paths: (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
   ),
+  analytics: (
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19V5m0 14h16M8 16v-5m4 5V8m4 8v-9" />
+  ),
 }
 
 function navForRole(role) {
   const items = [{ to: '/dashboard', label: 'Dashboard', icon: 'dashboard' }]
+  items.push({ to: '/analytics', label: 'Analytics', icon: 'analytics' })
   if (role === ROLES.MANAGER || role === ROLES.EMPLOYEE) {
     items.push({ to: '/learning-paths', label: 'Learning Paths', icon: 'paths' })
   }

@@ -6,6 +6,7 @@ import Layout from './components/layout/Layout'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import LearningPaths from './pages/LearningPaths'
+import Analytics from './pages/Analytics'
 
 function FullScreenLoader() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route
                 path="/learning-paths"
                 element={

@@ -10,6 +10,7 @@ const COLLAPSE_KEY = 'skill-profiler-sidebar-collapsed'
 
 const ROUTE_LABELS = {
   dashboard: 'Dashboard',
+  analytics: 'Analytics',
   'learning-paths': 'Learning Paths',
 }
 
