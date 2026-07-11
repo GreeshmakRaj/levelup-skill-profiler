@@ -11,6 +11,7 @@ const COLLAPSE_KEY = 'skill-profiler-sidebar-collapsed'
 const ROUTE_LABELS = {
   dashboard: 'Dashboard',
   'learning-paths': 'Learning Paths',
+  quiz: 'Quiz',
 }
 
 function Brand({ compact = false }) {
@@ -91,9 +92,8 @@ export default function Layout() {
       <div className="flex">
         {/* Sidebar – desktop */}
         <aside
-          className={`hidden md:flex flex-col shrink-0 border-r border-line bg-elevated min-h-[calc(100vh-3.5rem)] sticky top-14 transition-[width] duration-200 ease-in-out ${
-            collapsed ? 'w-[68px]' : 'w-60'
-          }`}
+          className={`hidden md:flex flex-col shrink-0 border-r border-line bg-elevated min-h-[calc(100vh-3.5rem)] sticky top-14 transition-[width] duration-200 ease-in-out ${collapsed ? 'w-[68px]' : 'w-60'
+            }`}
         >
           <Sidebar role={role} collapsed={collapsed} />
         </aside>
