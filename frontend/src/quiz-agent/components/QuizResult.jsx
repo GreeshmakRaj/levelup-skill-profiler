@@ -45,7 +45,7 @@ export default function QuizResult({
         </h2>
 
         <h1 className="mt-2 text-lg font-bold text-ink">{courseName}</h1>
-        {moduleName && <p className="mt-1 text-sm italic text-muted">{moduleName}</p>}
+        {moduleName && <p className="mt-1 text-sm text-muted">{moduleName}</p>}
       </div>
 
       {/* Middle Section - Question Breakdown */}

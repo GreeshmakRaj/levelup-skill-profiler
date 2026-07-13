@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import QuizCard from '../components/QuizCard'
 import { mockAssessments } from '../mockData'
@@ -24,15 +24,6 @@ function toComponentShape(a) {
         : a.last_score >= Math.ceil(a.question_count * 0.6) ? 'Pass' : 'Fail',
     },
   }
-}
-
-function StatPill({ value, label, wrapperClass = 'border-line bg-card', textClass = 'text-ink', labelClass = 'text-muted' }) {
-  return (
-    <div className={`flex min-w-[100px] flex-col items-center rounded-lg border px-5 py-3 shadow-sm ${wrapperClass}`}>
-      <span className={`text-2xl font-bold ${textClass}`}>{value}</span>
-      <span className={`mt-0.5 text-xs font-medium ${labelClass}`}>{label}</span>
-    </div>
-  )
 }
 
 function SkeletonCard() {
@@ -72,7 +63,6 @@ export default function QuizDashboardPage() {
   const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [activeFilter, setActiveFilter] = useState('All')
 
   useEffect(() => {
     let cancelled = false
@@ -83,7 +73,7 @@ export default function QuizDashboardPage() {
         // TODO: replace mockConsumedModules with real Team 3 API call when available.
         const consumedIds = new Set(mockConsumedModules.map((m) => m.module_id))
         const availableAssessments = mockAssessments.filter((a) => consumedIds.has(a.module_id))
-        
+
         setAssessments(availableAssessments.map(toComponentShape))
         setLoading(false)
       }
@@ -95,36 +85,6 @@ export default function QuizDashboardPage() {
     }
   }, [])
 
-  const stats = useMemo(() => {
-    const total = assessments.length
-    const passed = assessments.filter((a) => a.evaluation?.pass_fail_status === 'Pass').length
-    const needsAttention = assessments.filter(
-      (a) => a.evaluation?.pass_fail_status === 'Fail' || a.status === 'Not Started',
-    ).length
-
-    return { total, passed, needsAttention }
-  }, [assessments])
-
-  const filteredAssessments = useMemo(() => {
-    if (activeFilter === 'All') {
-      return assessments
-    }
-
-    if (activeFilter === 'Passed') {
-      return assessments.filter((a) => a.evaluation?.pass_fail_status === 'Pass')
-    }
-
-    if (activeFilter === 'Failed & Pending') {
-      return assessments.filter(
-        (a) => a.evaluation?.pass_fail_status === 'Fail' || a.status === 'Not Started',
-      )
-    }
-
-    return assessments
-  }, [assessments, activeFilter])
-
-  const tabs = ['All', 'Passed', 'Failed & Pending']
-
   function handleRetry() {
     setError(false)
     setLoading(true)
@@ -133,7 +93,7 @@ export default function QuizDashboardPage() {
       // TODO: replace mockConsumedModules with real Team 3 API call when available.
       const consumedIds = new Set(mockConsumedModules.map((m) => m.module_id))
       const availableAssessments = mockAssessments.filter((a) => consumedIds.has(a.module_id))
-      
+
       setAssessments(availableAssessments.map(toComponentShape))
       setLoading(false)
     }, 300)
@@ -164,42 +124,20 @@ export default function QuizDashboardPage() {
         <p className="mt-1 text-sm text-muted">Track your quiz progress across all completed modules</p>
       </div>
 
-      <div className="mb-8 inline-block">
-        <StatPill value={stats.total} label="Total Assessments" wrapperClass="border-line bg-card px-8" />
-      </div>
-
-      {/* Section 2 - Filter tabs */}
-      <div className="mb-6 flex gap-6 border-b border-line">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveFilter(tab)}
-            className={`-mb-px pb-3 text-sm font-semibold transition-colors cursor-pointer ${
-              activeFilter === tab
-                ? 'border-b-2 border-brand-500 text-brand-500'
-                : 'border-b-2 border-transparent text-muted hover:border-line hover:text-ink'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Section 3 - Assessment cards */}
+      {/* Section 2 - Assessment cards */}
       {loading ? (
         <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      ) : filteredAssessments.length === 0 ? (
+      ) : assessments.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <p className="text-sm text-muted">No assessments in this category.</p>
+          <p className="text-sm text-muted">No assessments available.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAssessments.map((assessment) => (
+          {assessments.map((assessment) => (
             <QuizCard
               key={assessment.assessment_id}
               assessment={assessment}

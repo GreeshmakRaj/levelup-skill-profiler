@@ -1,33 +1,38 @@
 import { useNavigate } from 'react-router-dom'
+import { CheckCircle, Circle, Clock, XCircle } from 'lucide-react'
 
 function getStatusBadge(assessment) {
   const status = assessment?.status
   const passFailStatus = assessment?.evaluation?.pass_fail_status
 
-  if (passFailStatus === 'Pass') {
+  if (passFailStatus === 'Pass' || status === 'Completed') {
     return {
-      text: 'Passed',
-      className: 'chip bg-green-50 text-green-700 border border-green-100',
+      text: passFailStatus === 'Pass' ? 'Passed' : 'Completed',
+      className: 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700',
+      icon: <CheckCircle className="w-3.5 h-3.5" />,
     }
   }
 
   if (passFailStatus === 'Fail') {
     return {
       text: 'Failed',
-      className: 'chip bg-red-50 text-red-700 border border-red-100',
+      className: 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700',
+      icon: <XCircle className="w-3.5 h-3.5" />,
     }
   }
 
   if (status === 'In Progress') {
     return {
       text: 'In Progress',
-      className: 'chip bg-yellow-50 text-yellow-700 border border-yellow-100',
+      className: 'text-sm font-medium text-amber-600 whitespace-nowrap inline-block',
+      icon: null,
     }
   }
 
   return {
     text: 'Not Started',
-    className: 'chip bg-surface text-muted border border-line',
+    className: 'text-sm text-muted whitespace-nowrap inline-block',
+    icon: null,
   }
 }
 
@@ -109,9 +114,10 @@ export default function QuizCard({ assessment, onStart }) {
             <h2 className="truncate text-base font-bold text-ink" title={assessment?.course_name}>
               {assessment?.course_name || 'Untitled Assessment'}
             </h2>
-            <p className="mt-1 text-[13px] italic text-muted">{assessment?.module_name || '—'}</p>
+            <p className="mt-1 text-sm text-muted">{assessment?.module_name || '—'}</p>
           </div>
           <span className={statusBadge.className}>
+            {statusBadge.icon}
             {statusBadge.text}
           </span>
         </div>

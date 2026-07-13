@@ -74,7 +74,7 @@ export default function QuizRunner({
           <h1 className="text-xl font-extrabold tracking-tight text-ink">
             {courseName}
           </h1>
-          <p className="mt-1 text-sm italic text-muted">
+          <p className="mt-1 text-sm text-muted">
             {moduleName ? `${moduleName}` : '—'}
           </p>
 
@@ -115,9 +115,9 @@ export default function QuizRunner({
     const currentAnswer = activeQuestion ? answers[activeQuestion.question_id] : null
 
     return (
-      <div className="flex items-start gap-5 py-4">
+      <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
         {/* Left: question card — takes remaining space */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
           <QuestionDisplay
             key={activeQuestion?.question_id}
             question={activeQuestion}
@@ -131,7 +131,7 @@ export default function QuizRunner({
         </div>
 
         {/* Right: questions list panel — fixed width */}
-        <div className="w-52 shrink-0 self-stretch">
+        <div className="w-52 shrink-0 h-full overflow-hidden">
           <QuestionsList
             questions={questions}
             answers={answers}

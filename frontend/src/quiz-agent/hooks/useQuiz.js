@@ -6,6 +6,7 @@ import { mockQuestions } from '../mockData'
 
 // DEMO: scoring is illustrative only, real grading happens server-side.
 const DEMO_CORRECT_ANSWERS = {
+  // Python Fundamentals
   'q-546b29e3': 'c', // tuple is immutable
   'q-a453ae76': 'b', // order guaranteed since 3.6
   'q-018352b5': 'a', // singleton = one instance
@@ -16,7 +17,48 @@ const DEMO_CORRECT_ANSWERS = {
   'q-d10ea9f0': 'b', // __init__ initializes attributes
   'q-63c626c8': 'a', // True — functions are first-class
   'q-166bf70e': 'a', // list is mutable
+  'q-7b2c8d11': 'c', // len()
+  'q-92f41ac3': ['a', 'c', 'd'], // list, dictionary, set are mutable
+  'q-c84de732': ['a', 'b', 'd'], // {}, dict(), {'a': 1}
+  'q-e31abf90': 'a', // True — Python supports multiple inheritance
+  'q-5fa93d47': ['a', 'b', 'c'], // functions as variables, args, return functions
+
+  // JavaScript Fundamentals
+  'js-q1': 'b',  // let
+  'js-q2': 'b',  // object
+  'js-q3': 'a',  // push()
+  'js-q4': 'c',  // ===
+  'js-q5': 'a',  // Document Object Model
+  'js-q6': ['a', 'b', 'c'], // string, number, boolean
+  'js-q7': 'b',  // JSON.parse()
+  'js-q8': 'a',  // True — first-class functions
+  'js-q9': 'c',  // this
+  'js-q10': ['a', 'b', 'd'], // map(), filter(), slice()
+  'js-q11': 'a', // for
+  'js-q12': 'b', // number
+  'js-q13': 'd', // break
+  'js-q14': 'b', // False — const cannot be reassigned
+  'js-q15': ['a', 'b', 'c'], // function decl, arrow, function expr
+
+  // SQL & Database Basics
+  'sql-q1': 'b',  // SELECT
+  'sql-q2': 'c',  // WHERE
+  'sql-q3': 'a',  // uniquely identifies a row
+  'sql-q4': 'b',  // INSERT
+  'sql-q5': 'c',  // INNER JOIN
+  'sql-q6': ['a', 'b', 'c'], // COUNT, SUM, AVG
+  'sql-q7': 'a',  // Structured Query Language
+  'sql-q8': 'a',  // True — one primary key
+  'sql-q9': 'c',  // UPDATE
+  'sql-q10': 'b', // ORDER BY
+  'sql-q11': ['a', 'b'], // PRIMARY KEY, UNIQUE
+  'sql-q12': 'c', // TRUNCATE
+  'sql-q13': 'b', // Reducing data duplication
+  'sql-q14': 'a', // True — FK references PK
+  'sql-q15': ['a', 'b'], // GROUP BY, HAVING
 }
+
+const isMultiSelect = (type) => type === 'Multiple Select' || type === 'MSQ'
 
 /**
  * Transforms raw mock questions into the shape the components expect.
@@ -77,18 +119,10 @@ export default function useQuiz(assessmentId) {
     const question = questions.find((q) => q.question_id === questionId)
     if (!question) return
 
-    setAnswers((prev) => {
-      if (question.question_type === 'Multiple Select') {
-        const currentList = prev[questionId] || []
-        const newList = currentList.includes(answer)
-          ? currentList.filter((item) => item !== answer)
-          : [...currentList, answer]
-        return { ...prev, [questionId]: newList }
-      }
-
-      // MCQ or Boolean — answer is the option key (e.g., "a", "b")
-      return { ...prev, [questionId]: answer }
-    })
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }))
   }
 
   function nextQuestion() {
@@ -121,7 +155,14 @@ export default function useQuiz(assessmentId) {
         // DEMO: scoring is illustrative only, real grading happens server-side.
         const responses = formattedAnswers.map((a, i) => {
           const correctKey = DEMO_CORRECT_ANSWERS[a.question_id]
-          const isCorrect = a.submitted_answer === correctKey
+          let isCorrect = false
+          if (Array.isArray(correctKey)) {
+            // MSQ: compare sorted arrays
+            const submitted = Array.isArray(a.submitted_answer) ? [...a.submitted_answer].sort() : []
+            isCorrect = submitted.length === correctKey.length && submitted.every((v, i) => v === [...correctKey].sort()[i])
+          } else {
+            isCorrect = a.submitted_answer === correctKey
+          }
           const question = questions[i]
           return {
             response_id: `resp-${String(i + 1).padStart(2, '0')}`,

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import QuizRunner from '../components/QuizRunner'
 import { mockAssessments } from '../mockData'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronLeft } from 'lucide-react'
 
 // TEMP DEMO MODE: reading from mockData.js instead of useQuizApi().
 // Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
@@ -109,6 +109,13 @@ export default function QuizPage() {
 
   return (
     <div className="w-full bg-card p-6">
+      <Link
+        to="/quiz"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Quiz Dashboard
+      </Link>
       <QuizRunner
         assessmentId={resolvedAssessmentId}
         assessmentInfo={assessmentInfo}

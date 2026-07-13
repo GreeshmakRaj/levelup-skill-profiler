@@ -28,7 +28,7 @@ export default function QuestionsList({ questions, answers, currentIndex, onSele
       </div>
 
       {/* Scrollable question rows */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-1 pr-2">
         {questions.map((q, idx) => {
           const answer = answers[q.question_id]
           const isAnswered =

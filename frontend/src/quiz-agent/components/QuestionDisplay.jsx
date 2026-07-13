@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronRight, ChevronLeft, Eye, EyeOff } from 'lucide-react'
+
+const isMultiSelect = (type) => type === 'Multiple Select' || type === 'MSQ'
 
 export default function QuestionDisplay({
   question,
@@ -11,6 +13,12 @@ export default function QuestionDisplay({
   onPrev,
 }) {
   const [showHint, setShowHint] = useState(false)
+  const [localAnswer, setLocalAnswer] = useState(currentAnswer)
+
+  useEffect(() => {
+    setLocalAnswer(currentAnswer)
+    setShowHint(false)
+  }, [question?.question_id, currentAnswer])
 
   if (!question) return null
 
@@ -21,14 +29,33 @@ export default function QuestionDisplay({
 
   // Selection state uses the option key ("a", "b", etc.), not the display text.
   const isSelected = (key) => {
-    if (question_type === 'Multiple Select') {
-      return Array.isArray(currentAnswer) && currentAnswer.includes(key)
+    if (isMultiSelect(question_type)) {
+      return Array.isArray(localAnswer) && localAnswer.includes(key)
     }
-    return currentAnswer === key
+    return localAnswer === key
   }
 
   const handleOptionClick = (key) => {
-    onAnswer(question_id, key)
+    if (isMultiSelect(question_type)) {
+      setLocalAnswer((prev) => {
+        const currentList = Array.isArray(prev) ? prev : []
+        return currentList.includes(key)
+          ? currentList.filter((item) => item !== key)
+          : [...currentList, key]
+      })
+    } else {
+      setLocalAnswer(key)
+    }
+  }
+
+  const handleNext = () => {
+    onAnswer(question_id, localAnswer)
+    onNext()
+  }
+
+  const handlePrev = () => {
+    onAnswer(question_id, localAnswer)
+    onPrev()
   }
 
   return (
@@ -39,13 +66,12 @@ export default function QuestionDisplay({
           Question {currentIndex + 1} of {totalQuestions}
         </span>
         <span
-          className={`chip border text-[11px] py-0.5 px-2 ${
-            question_type === 'MCQ'
-              ? 'bg-blue-50 text-blue-700 border-blue-200'
-              : question_type === 'Multiple Select'
+          className={`chip border text-[11px] py-0.5 px-2 ${question_type === 'MCQ'
+            ? 'bg-blue-50 text-blue-700 border-blue-200'
+            : isMultiSelect(question_type)
               ? 'bg-purple-50 text-purple-700 border-purple-200'
               : 'bg-teal-50 text-teal-700 border-teal-200'
-          }`}
+            }`}
         >
           {question_type}
         </span>
@@ -65,7 +91,7 @@ export default function QuestionDisplay({
       </h2>
 
       {/* Hint Logic */}
-      {question_type === 'Multiple Select' ? (
+      {isMultiSelect(question_type) ? (
         <div className="mt-1.5 text-xs font-medium text-brand-500">
           Select all that apply.
         </div>
@@ -110,11 +136,10 @@ export default function QuestionDisplay({
                   key={key}
                   type="button"
                   onClick={() => handleOptionClick(key)}
-                  className={`flex-1 rounded-lg py-3 text-center text-sm font-semibold transition-all border ${
-                    selected
-                      ? 'bg-brand-500 border-brand-500 text-white shadow-sm'
-                      : 'bg-card border-line text-ink hover:bg-surface hover:border-faint'
-                  }`}
+                  className={`flex-1 rounded-lg py-3 text-center text-sm font-semibold transition-all border ${selected
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 shadow-sm'
+                    : 'bg-card border-line text-ink hover:bg-surface hover:border-faint'
+                    }`}
                 >
                   {text}
                 </button>
@@ -126,33 +151,29 @@ export default function QuestionDisplay({
             {optionEntries.map(([key, text]) => {
               const selected = isSelected(key)
               const displayLetter = key.toUpperCase()
-              const isBox = question_type === 'Multiple Select'
+              const isBox = isMultiSelect(question_type)
 
               return (
                 <div
                   key={key}
                   onClick={() => handleOptionClick(key)}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-all hover:bg-surface/50 ${
-                    selected
-                      ? 'border-brand-500 bg-brand-50/30'
-                      : 'border-line bg-card hover:border-faint'
-                  }`}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-all hover:bg-surface/50 ${selected
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10'
+                    : 'border-line bg-card hover:border-faint'
+                    }`}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold transition-all ${
-                      isBox ? 'rounded-lg' : 'rounded-full'
-                    } ${
-                      selected
-                        ? 'border-brand-500 bg-brand-50 text-brand-500'
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold transition-all ${isBox ? 'rounded-lg' : 'rounded-full'
+                      } ${selected
+                        ? 'border-brand-500 bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-400'
                         : 'border-faint bg-card text-muted'
-                    }`}
+                      }`}
                   >
                     {displayLetter}
                   </div>
                   <span
-                    className={`text-sm font-medium ${
-                      selected ? 'text-brand-900' : 'text-ink'
-                    }`}
+                    className={`text-sm font-medium ${selected ? 'text-brand-700 dark:text-brand-400' : 'text-ink'
+                      }`}
                   >
                     {text}
                   </span>
@@ -168,7 +189,7 @@ export default function QuestionDisplay({
         {currentIndex > 0 ? (
           <button
             type="button"
-            onClick={onPrev}
+            onClick={handlePrev}
             className="btn-secondary !py-1.5 !px-3 !text-sm"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -179,7 +200,7 @@ export default function QuestionDisplay({
         )}
         <button
           type="button"
-          onClick={onNext}
+          onClick={handleNext}
           className="btn-primary !py-1.5 !px-3 !text-sm"
         >
           {currentIndex === totalQuestions - 1 ? 'Submit Assessment' : 'Next'}

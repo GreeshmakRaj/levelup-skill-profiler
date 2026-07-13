@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { mockAssessments } from '../mockData'
 import AttemptHistory from '../components/AttemptHistory'
+import { ChevronLeft } from 'lucide-react'
 
 // TEMP DEMO MODE: reading from mockData.js instead of useQuizApi().
 // Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
@@ -99,10 +100,18 @@ export default function AttemptHistoryPage() {
 
   return (
     <div className="w-full bg-card p-6">
+      <Link
+        to="/quiz"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Quiz Dashboard
+      </Link>
+
       {/* Section 1 */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-ink">{assessmentMeta.course_name}</h1>
-        <div className="mt-1 text-lg italic text-muted">{assessmentMeta.module_name || '—'}</div>
+        <h1 className="text-2xl font-bold text-ink">{assessmentMeta.course_name}</h1>
+        <p className="mt-1 text-sm text-muted">{assessmentMeta.module_name || '—'}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="skill-pill">
             {assessmentMeta.difficulty || 'Beginner'}
@@ -149,8 +158,11 @@ export default function AttemptHistoryPage() {
       </div>
 
       {/* Section 3 */}
-      <div>
-        <h2 className="mb-4 text-xl font-bold text-ink">Attempt History</h2>
+      <div className="mt-10">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-ink">Attempt History</h2>
+          <p className="mt-1 text-sm text-muted">Review your past performance and scores for this assessment</p>
+        </div>
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line py-12">
             <p className="mb-4 text-sm text-muted">No attempts yet. Start this assessment from your dashboard.</p>
