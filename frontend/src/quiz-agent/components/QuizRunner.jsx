@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react'
 import useQuiz from '../hooks/useQuiz'
 import QuestionDisplay from './QuestionDisplay'
 import QuestionsList from './QuestionsList'
 import QuizResult from './QuizResult'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronLeft } from 'lucide-react'
 
 export default function QuizRunner({
   assessmentId,
@@ -21,8 +22,27 @@ export default function QuizRunner({
     nextQuestion,
     prevQuestion,
     setCurrentIndex,
-    retakeQuiz,
   } = useQuiz(assessmentId)
+
+  const topics = Array.isArray(assessmentInfo?.topics) ? assessmentInfo.topics : []
+  const [selectedTopics, setSelectedTopics] = useState([])
+
+  useEffect(() => {
+    setSelectedTopics(topics)
+  }, [assessmentId, assessmentInfo])
+
+  function toggleTopic(topic) {
+    setSelectedTopics((current) =>
+      current.includes(topic)
+        ? current.filter((item) => item !== topic)
+        : [...current, topic],
+    )
+  }
+
+  function handleStartQuiz() {
+    if (topics.length > 0 && selectedTopics.length === 0) return
+    startQuiz()
+  }
 
   // Full screen loading or submit spinners
   if (phase === 'loading' && !error) {
@@ -66,31 +86,54 @@ export default function QuizRunner({
   // INTRO PHASE
   if (phase === 'intro') {
     const courseName = assessmentInfo?.course_name || 'Assessment'
-    const moduleName = assessmentInfo?.module_name || '—'
+    const canStart = topics.length === 0 || selectedTopics.length > 0
 
     return (
-      <div className="flex h-full items-center justify-center p-6">
+      <div className="relative flex h-full items-center justify-center p-6">
+        <button
+          type="button"
+          onClick={onBackToDashboard}
+          className="absolute left-6 top-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Quiz Dashboard
+        </button>
         <div className="card w-full max-w-[480px]">
           <h1 className="text-xl font-extrabold tracking-tight text-ink">
             {courseName}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            {moduleName ? `${moduleName}` : '—'}
-          </p>
 
-          <div className="mt-6 border-y border-line py-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Questions</span>
-              <span className="font-bold text-ink">{questions.length}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Difficulty</span>
-              <span className="font-bold text-ink">{assessmentInfo?.difficulty || 'Intermediate'}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Passing Score</span>
-              <span className="font-bold text-ink">60%</span>
-            </div>
+          <div className="mt-6 border-y border-line py-4">
+            <p className="text-xs text-muted">Select the topics you completed before taking this assessment.</p>
+
+            {topics.length > 0 ? (
+              <div className="mt-3 grid gap-2">
+                {topics.map((topic) => {
+                  const checked = selectedTopics.includes(topic)
+                  return (
+                    <label
+                      key={topic}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${checked
+                        ? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-500/50 dark:bg-brand-500/10 dark:text-brand-400'
+                        : 'border-line bg-card text-ink hover:bg-surface'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleTopic(topic)}
+                        className="h-4 w-4 rounded border-line text-brand-500 focus:ring-brand-500"
+                      />
+                      <span className="font-medium">{topic}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="mt-4 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-muted">
+                No topics are available for this assessment yet.
+              </p>
+            )}
           </div>
 
           <p className="mt-6 text-xs text-muted leading-normal">
@@ -99,7 +142,8 @@ export default function QuizRunner({
 
           <button
             type="button"
-            onClick={startQuiz}
+            onClick={handleStartQuiz}
+            disabled={!canStart}
             className="btn-primary mt-6 w-full"
           >
             Start Assessment
@@ -109,14 +153,14 @@ export default function QuizRunner({
     )
   }
 
-  // ACTIVE PHASE — side-by-side layout
+  // ACTIVE PHASE - side-by-side layout
   if (phase === 'active') {
     const activeQuestion = questions[currentIndex]
     const currentAnswer = activeQuestion ? answers[activeQuestion.question_id] : null
 
     return (
       <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
-        {/* Left: question card — takes remaining space */}
+        {/* Left: question card - takes remaining space */}
         <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
           <QuestionDisplay
             key={activeQuestion?.question_id}
@@ -130,7 +174,7 @@ export default function QuizRunner({
           />
         </div>
 
-        {/* Right: questions list panel — fixed width */}
+        {/* Right: questions list panel - fixed width */}
         <div className="w-52 shrink-0 h-full overflow-hidden">
           <QuestionsList
             questions={questions}
@@ -151,7 +195,6 @@ export default function QuizRunner({
           result={result}
           assessmentInfo={assessmentInfo}
           questions={questions}
-          onRetake={retakeQuiz}
           onBackToDashboard={onBackToDashboard}
         />
       </div>
@@ -160,3 +203,4 @@ export default function QuizRunner({
 
   return null
 }
+

@@ -4,7 +4,6 @@ export default function QuizResult({
   result,
   assessmentInfo,
   questions,
-  onRetake,
   onBackToDashboard,
 }) {
   if (!result) return null
@@ -109,18 +108,11 @@ export default function QuizResult({
       </div>
 
       {/* Bottom Section - Action Buttons */}
-      <div className="mt-8 flex gap-4 border-t border-line pt-6">
-        <button
-          type="button"
-          onClick={onRetake}
-          className="btn-secondary flex-1"
-        >
-          Retake Assessment
-        </button>
+      <div className="mt-8 flex justify-center border-t border-line pt-6">
         <button
           type="button"
           onClick={onBackToDashboard}
-          className="btn-primary flex-1"
+          className="btn-primary w-full max-w-[260px]"
         >
           Back to Dashboard
         </button>
@@ -128,3 +120,5 @@ export default function QuizResult({
     </div>
   )
 }
+
+
