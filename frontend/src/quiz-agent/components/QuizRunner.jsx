@@ -3,6 +3,7 @@ import QuestionDisplay from './QuestionDisplay'
 import QuestionsList from './QuestionsList'
 import QuizResult from './QuizResult'
 import { AlertCircle } from 'lucide-react'
+import { SubtopicFilter } from './SubtopicFilter'
 
 export default function QuizRunner({
   assessmentId,
@@ -23,7 +24,15 @@ export default function QuizRunner({
     setCurrentIndex,
     retakeQuiz,
   } = useQuiz(assessmentId)
-
+// should come from backend response 
+  const SUBTOPICS = [
+  "Variables & Data Types",
+  "Control Flow",
+  "Functions & Scope",
+  "Arrays & Objects",
+  "Async / Promises",
+  "Error Handling",
+];
   // Full screen loading or submit spinners
   if (phase === 'loading' && !error) {
     return (
@@ -79,7 +88,14 @@ export default function QuizRunner({
           </p>
 
           <div className="mt-6 border-y border-line py-4 space-y-3">
-            <div className="flex justify-between text-sm">
+              <div className="border-t border-line pt-3">
+                <SubtopicFilter
+                  subtopics={SUBTOPICS}
+                  onChange={(selected) => console.log("Active subtopics:", selected)}
+                />
+              </div>
+
+            {/* <div className="flex justify-between text-sm">
               <span className="font-medium text-muted">Questions</span>
               <span className="font-bold text-ink">{questions.length}</span>
             </div>
@@ -90,7 +106,7 @@ export default function QuizRunner({
             <div className="flex justify-between text-sm">
               <span className="font-medium text-muted">Passing Score</span>
               <span className="font-bold text-ink">60%</span>
-            </div>
+            </div> */}
           </div>
 
           <p className="mt-6 text-xs text-muted leading-normal">
