@@ -87,13 +87,11 @@ export default function QuizRunner({
             {moduleName ? `${moduleName}` : '—'}
           </p>
 
-          <div className="mt-6 border-y border-line py-4 space-y-3">
-              <div className="border-t border-line pt-3">
-                <SubtopicFilter
-                  subtopics={SUBTOPICS}
-                  onChange={(selected) => console.log("Active subtopics:", selected)}
-                />
-              </div>
+          <div className="mt-6 border-y border-line py-3">
+            <SubtopicFilter
+              subtopics={SUBTOPICS}
+              onChange={(selected) => console.log("Active subtopics:", selected)}
+            />
 
             {/* <div className="flex justify-between text-sm">
               <span className="font-medium text-muted">Questions</span>
