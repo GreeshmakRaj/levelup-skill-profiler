@@ -8,6 +8,7 @@ export const mockAssessments = [
     description: "Core language features, data types, and OOP basics.",
     module_id: "mod-python-basics",
     question_count: 10,
+    topics: ["Data types", "Control flow", "Functions", "OOP basics"],
     status: "not_started", // "not_started" | "in_progress" | "completed"
     last_score: null,
   },
@@ -17,6 +18,7 @@ export const mockAssessments = [
     description: "Core JavaScript concepts, functions, arrays, and objects.",
     module_id: "mod-javascript-basics",
     question_count: 15,
+    topics: ["Variables", "Functions", "Arrays", "DOM basics"],
     status: "completed",
     last_score: 87,
   },
@@ -26,6 +28,17 @@ export const mockAssessments = [
     description: "Fundamentals of relational databases, SQL queries, and normalization.",
     module_id: "mod-sql-basics",
     question_count: 15,
+    topics: ["SQL queries", "Joins", "Keys", "Normalization"],
+    status: "not_started",
+    last_score: null,
+  },
+  {
+    id: "a-machine-learning",
+    title: "Machine Learning Basics",
+    description: "Core machine learning concepts, model training, and evaluation.",
+    module_id: "mod-machine-learning",
+    question_count: 15,
+    topics: ["Supervised learning", "Model evaluation", "Algorithms", "Overfitting"],
     status: "not_started",
     last_score: null,
   },
@@ -570,4 +583,189 @@ export const mockQuestions = {
       },
     },
   ],
+  "a-machine-learning": [
+    {
+      id: "ml-q1",
+      sequence_number: 1,
+      question_text: "Which type of machine learning uses labeled training data?",
+      question_type: "MCQ",
+      options: {
+        a: "Supervised learning",
+        b: "Unsupervised learning",
+        c: "Reinforcement learning",
+        d: "Self-organizing learning",
+      },
+    },
+    {
+      id: "ml-q2",
+      sequence_number: 2,
+      question_text: "Which algorithm is commonly used for classification tasks?",
+      question_type: "MCQ",
+      options: {
+        a: "K-means clustering",
+        b: "Linear regression",
+        c: "Logistic regression",
+        d: "Principal component analysis",
+      },
+    },
+    {
+      id: "ml-q3",
+      sequence_number: 3,
+      question_text: "What does overfitting mean?",
+      question_type: "MCQ",
+      options: {
+        a: "The model performs well on training data but poorly on new data",
+        b: "The model has too few parameters to learn patterns",
+        c: "The model never updates its weights",
+        d: "The dataset has no labels",
+      },
+    },
+    {
+      id: "ml-q4",
+      sequence_number: 4,
+      question_text: "Which metric is useful for evaluating a classification model?",
+      question_type: "MCQ",
+      options: {
+        a: "Accuracy",
+        b: "Latency only",
+        c: "File size",
+        d: "Memory address",
+      },
+    },
+    {
+      id: "ml-q5",
+      sequence_number: 5,
+      question_text: "What is the purpose of a validation set?",
+      question_type: "MCQ",
+      options: {
+        a: "To tune model choices without using the final test set",
+        b: "To permanently store production predictions",
+        c: "To replace training data",
+        d: "To remove all features from a dataset",
+      },
+    },
+    {
+      id: "ml-q6",
+      sequence_number: 6,
+      question_text: "Which of the following are supervised learning tasks? (Select all that apply)",
+      question_type: "MSQ",
+      options: {
+        a: "Classification",
+        b: "Regression",
+        c: "Clustering",
+        d: "Dimensionality reduction only",
+      },
+    },
+    {
+      id: "ml-q7",
+      sequence_number: 7,
+      question_text: "Which algorithm groups similar data points without labels?",
+      question_type: "MCQ",
+      options: {
+        a: "Decision tree",
+        b: "K-means clustering",
+        c: "Logistic regression",
+        d: "Naive Bayes",
+      },
+    },
+    {
+      id: "ml-q8",
+      sequence_number: 8,
+      question_text: "True or False: More training data can often help reduce overfitting.",
+      question_type: "Boolean",
+      options: {
+        a: "True",
+        b: "False",
+      },
+    },
+    {
+      id: "ml-q9",
+      sequence_number: 9,
+      question_text: "What is a feature in a machine learning dataset?",
+      question_type: "MCQ",
+      options: {
+        a: "An input variable used by the model",
+        b: "The final deployed application",
+        c: "A database password",
+        d: "Only the model output",
+      },
+    },
+    {
+      id: "ml-q10",
+      sequence_number: 10,
+      question_text: "Which technique can help reduce overfitting?",
+      question_type: "MCQ",
+      options: {
+        a: "Regularization",
+        b: "Removing validation data",
+        c: "Training forever without testing",
+        d: "Using only one example",
+      },
+    },
+    {
+      id: "ml-q11",
+      sequence_number: 11,
+      question_text: "Which metric balances precision and recall?",
+      question_type: "MCQ",
+      options: {
+        a: "F1 score",
+        b: "Mean only",
+        c: "Dataset size",
+        d: "Epoch count",
+      },
+    },
+    {
+      id: "ml-q12",
+      sequence_number: 12,
+      question_text: "Which of these are common model evaluation metrics? (Select all that apply)",
+      question_type: "MSQ",
+      options: {
+        a: "Precision",
+        b: "Recall",
+        c: "F1 score",
+        d: "Theme color",
+      },
+    },
+    {
+      id: "ml-q13",
+      sequence_number: 13,
+      question_text: "What is the target variable in supervised learning?",
+      question_type: "MCQ",
+      options: {
+        a: "The value the model is trained to predict",
+        b: "A random unused column",
+        c: "The file name of the dataset",
+        d: "The number of CPU cores",
+      },
+    },
+    {
+      id: "ml-q14",
+      sequence_number: 14,
+      question_text: "True or False: A test set should be used to estimate final model performance.",
+      question_type: "Boolean",
+      options: {
+        a: "True",
+        b: "False",
+      },
+    },
+    {
+      id: "ml-q15",
+      sequence_number: 15,
+      question_text: "Which algorithms can be used for classification? (Select all that apply)",
+      question_type: "MSQ",
+      options: {
+        a: "Decision tree",
+        b: "Logistic regression",
+        c: "Support vector machine",
+        d: "K-means clustering only",
+      },
+    },
+  ],
 };
+
+
+
+
+
+
+

@@ -1,12 +1,14 @@
+import { useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
 
 export default function QuizResult({
   result,
   assessmentInfo,
   questions,
-  onRetake,
   onBackToDashboard,
 }) {
+  const [showBreakdown, setShowBreakdown] = useState(false)
+
   if (!result) return null
 
   const { evaluation, responses } = result
@@ -27,32 +29,41 @@ export default function QuizResult({
       {/* Top Section - Score Summary */}
       <div className="text-center">
         <div
-          className={`mx-auto flex h-32 w-32 items-center justify-center rounded-full border-4 text-3xl font-extrabold shadow-sm ${
-            isPass
+          className={`mx-auto flex h-32 w-32 items-center justify-center rounded-full border-4 text-3xl font-extrabold shadow-sm ${isPass
               ? 'border-green-500 text-green-600 bg-green-50/20'
               : 'border-red-500 text-red-600 bg-red-50/20'
-          }`}
+            }`}
         >
           {score} / {totalQuestions}
         </div>
 
         <h2
-          className={`mt-4 text-2xl font-bold tracking-tight ${
-            isPass ? 'text-green-600' : 'text-red-600'
-          }`}
+          className={`mt-4 text-2xl font-bold tracking-tight ${isPass ? 'text-green-600' : 'text-red-600'
+            }`}
         >
           {isPass ? 'Passed!' : 'Failed'}
         </h2>
 
         <h1 className="mt-2 text-lg font-bold text-ink">{courseName}</h1>
         {moduleName && <p className="mt-1 text-sm text-muted">{moduleName}</p>}
+        
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowBreakdown(!showBreakdown)}
+            className="btn-ghost"
+          >
+            {showBreakdown ? "Hide Breakdown" : "Show Breakdown"}
+          </button>
+        </div>
       </div>
 
       {/* Middle Section - Question Breakdown */}
-      <div className="mt-8">
-        <h3 className="border-b border-line pb-3 text-base font-bold text-ink">
-          Question Breakdown
-        </h3>
+      {showBreakdown && (
+        <div className="mt-8">
+          <h3 className="border-b border-line pb-3 text-base font-bold text-ink">
+            Question Breakdown
+          </h3>
 
         <div className="mt-4 divide-y divide-line">
           {responses.map((resp, index) => {
@@ -107,20 +118,14 @@ export default function QuizResult({
           })}
         </div>
       </div>
+      )}
 
       {/* Bottom Section - Action Buttons */}
-      <div className="mt-8 flex gap-4 border-t border-line pt-6">
-        <button
-          type="button"
-          onClick={onRetake}
-          className="btn-secondary flex-1"
-        >
-          Retake Assessment
-        </button>
+      <div className="mt-8 flex justify-center border-t border-line pt-6">
         <button
           type="button"
           onClick={onBackToDashboard}
-          className="btn-primary flex-1"
+          className="btn-primary w-full max-w-[260px]"
         >
           Back to Dashboard
         </button>
@@ -128,3 +133,5 @@ export default function QuizResult({
     </div>
   )
 }
+
+

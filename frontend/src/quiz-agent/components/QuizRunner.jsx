@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react'
 import useQuiz from '../hooks/useQuiz'
 import QuestionDisplay from './QuestionDisplay'
 import QuestionsList from './QuestionsList'
 import QuizResult from './QuizResult'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronLeft } from 'lucide-react'
 import { SubtopicFilter } from './SubtopicFilter'
 
 export default function QuizRunner({
@@ -23,16 +24,17 @@ export default function QuizRunner({
     prevQuestion,
     setCurrentIndex,
     retakeQuiz,
+    reviewData,
   } = useQuiz(assessmentId)
-// should come from backend response 
+  // should come from backend response 
   const SUBTOPICS = [
-  "Variables & Data Types",
-  "Control Flow",
-  "Functions & Scope",
-  "Arrays & Objects",
-  "Async / Promises",
-  "Error Handling",
-];
+    "Variables & Data Types",
+    "Control Flow",
+    "Functions & Scope",
+    "Arrays & Objects",
+    "Async / Promises",
+    "Error Handling",
+  ];
   // Full screen loading or submit spinners
   if (phase === 'loading' && !error) {
     return (
@@ -75,16 +77,24 @@ export default function QuizRunner({
   // INTRO PHASE
   if (phase === 'intro') {
     const courseName = assessmentInfo?.course_name || 'Assessment'
-    const moduleName = assessmentInfo?.module_name || '—'
+    const canStart = SUBTOPICS.length === 0
 
     return (
-      <div className="flex h-full items-center justify-center p-6">
+      <div className="relative flex h-full items-center justify-center p-6">
+        <button
+          type="button"
+          onClick={onBackToDashboard}
+          className="absolute left-6 top-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Quiz Dashboard
+        </button>
         <div className="card w-full max-w-[480px]">
           <h1 className="text-xl font-extrabold tracking-tight text-ink">
             {courseName}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {moduleName ? `${moduleName}` : '—'}
+            {/* {moduleName ? `${moduleName}` : '—'} */}
           </p>
 
           <div className="mt-6 border-y border-line py-3">
@@ -93,18 +103,6 @@ export default function QuizRunner({
               onChange={(selected) => console.log("Active subtopics:", selected)}
             />
 
-            {/* <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Questions</span>
-              <span className="font-bold text-ink">{questions.length}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Difficulty</span>
-              <span className="font-bold text-ink">{assessmentInfo?.difficulty || 'Intermediate'}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-muted">Passing Score</span>
-              <span className="font-bold text-ink">60%</span>
-            </div> */}
           </div>
 
           <p className="mt-6 text-xs text-muted leading-normal">
@@ -123,14 +121,14 @@ export default function QuizRunner({
     )
   }
 
-  // ACTIVE PHASE — side-by-side layout
+  // ACTIVE PHASE - side-by-side layout
   if (phase === 'active') {
     const activeQuestion = questions[currentIndex]
     const currentAnswer = activeQuestion ? answers[activeQuestion.question_id] : null
 
     return (
       <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
-        {/* Left: question card — takes remaining space */}
+        {/* Left: question card - takes remaining space */}
         <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
           <QuestionDisplay
             key={activeQuestion?.question_id}
@@ -144,7 +142,7 @@ export default function QuizRunner({
           />
         </div>
 
-        {/* Right: questions list panel — fixed width */}
+        {/* Right: questions list panel - fixed width */}
         <div className="w-52 shrink-0 h-full overflow-hidden">
           <QuestionsList
             questions={questions}
@@ -163,6 +161,7 @@ export default function QuizRunner({
       <div className="py-6">
         <QuizResult
           result={result}
+          reviewData={reviewData}
           assessmentInfo={assessmentInfo}
           questions={questions}
           onRetake={retakeQuiz}

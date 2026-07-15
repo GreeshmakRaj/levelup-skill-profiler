@@ -56,6 +56,22 @@ const DEMO_CORRECT_ANSWERS = {
   'sql-q13': 'b', // Reducing data duplication
   'sql-q14': 'a', // True — FK references PK
   'sql-q15': ['a', 'b'], // GROUP BY, HAVING
+  // Machine Learning
+  'ml-q1': 'a',
+  'ml-q2': 'c',
+  'ml-q3': 'a',
+  'ml-q4': 'a',
+  'ml-q5': 'a',
+  'ml-q6': ['a', 'b'],
+  'ml-q7': 'b',
+  'ml-q8': 'a',
+  'ml-q9': 'a',
+  'ml-q10': 'a',
+  'ml-q11': 'a',
+  'ml-q12': ['a', 'b', 'c'],
+  'ml-q13': 'a',
+  'ml-q14': 'a',
+  'ml-q15': ['a', 'b', 'c'],
 }
 
 const isMultiSelect = (type) => type === 'Multiple Select' || type === 'MSQ'
@@ -225,3 +241,5 @@ export default function useQuiz(assessmentId) {
     retakeQuiz,
   }
 }
+
+

@@ -8,6 +8,12 @@ import { mockConsumedModules } from '../mockTeam3Data'
 // Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
 const STATUS_MAP = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' }
 
+const TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'not_started', label: 'Not Started' },
+  { key: 'completed', label: 'Completed' },
+]
+
 function toComponentShape(a) {
   return {
     assessment_id: a.id,
@@ -26,41 +32,28 @@ function toComponentShape(a) {
   }
 }
 
+function tabKeyForAssessment(assessment) {
+  return assessment.status === 'Completed' ? 'completed' : 'not_started'
+}
+
 function SkeletonCard() {
   return (
-    <div className="card flex h-full flex-col justify-between">
+    <div className="card flex h-[168px] w-full max-w-[240px] flex-col justify-between !rounded-xl !p-4">
       <div>
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="skeleton h-5 w-3/4" />
-            <div className="skeleton mt-2 h-4 w-1/2" />
-          </div>
-          <div className="skeleton h-6 w-20 rounded-full" />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="skeleton h-5 w-16 rounded-full" />
-          <div className="skeleton h-5 w-20 rounded-full" />
-          <div className="skeleton h-5 w-14 rounded-full" />
-        </div>
-        <div className="mt-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="skeleton h-2.5 w-2.5 rounded-full" />
-            <div className="skeleton h-4 w-24" />
-          </div>
-          <div>
-            <div className="skeleton mb-2 h-4 w-20" />
-            <div className="skeleton h-2 w-full rounded-full" />
-          </div>
+        <div className="skeleton h-5 w-3/4" />
+        <div className="mt-4">
+          <div className="skeleton mb-2 h-4 w-20" />
+          <div className="skeleton h-2 w-full rounded-full" />
         </div>
       </div>
-      <div className="skeleton mt-6 h-10 w-full rounded-lg" />
+      <div className="skeleton mt-3 h-9 w-full rounded-lg" />
     </div>
   )
 }
-
 export default function QuizDashboardPage() {
   const navigate = useNavigate()
   const [assessments, setAssessments] = useState([])
+  const [activeTab, setActiveTab] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -99,6 +92,12 @@ export default function QuizDashboardPage() {
     }, 300)
   }
 
+  const visibleAssessments = activeTab === 'all'
+    ? assessments
+    : assessments.filter((assessment) => tabKeyForAssessment(assessment) === activeTab)
+
+  const activeTabLabel = TABS.find((tab) => tab.key === activeTab)?.label.toLowerCase()
+
   if (error) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -118,26 +117,47 @@ export default function QuizDashboardPage() {
 
   return (
     <div className="w-full bg-card p-6">
-      {/* Section 1 - Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-ink">My Assessments</h1>
         <p className="mt-1 text-sm text-muted">Track your quiz progress across all completed modules</p>
       </div>
 
-      {/* Section 2 - Assessment cards */}
+      {!loading && (
+        <div className="mb-5 inline-flex rounded-xl border border-line bg-surface p-1">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                  isActive
+                    ? 'bg-card text-brand-700 shadow-sm dark:text-brand-400'
+                    : 'text-muted hover:text-ink'
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {loading ? (
-        <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start gap-4">
+          <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      ) : assessments.length === 0 ? (
+      ) : visibleAssessments.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <p className="text-sm text-muted">No assessments available.</p>
+          <p className="text-sm text-muted">No {activeTabLabel} assessments available.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {assessments.map((assessment) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start gap-4">
+          {visibleAssessments.map((assessment) => (
             <QuizCard
               key={assessment.assessment_id}
               assessment={assessment}
@@ -149,3 +169,9 @@ export default function QuizDashboardPage() {
     </div>
   )
 }
+
+
+
+
+
+

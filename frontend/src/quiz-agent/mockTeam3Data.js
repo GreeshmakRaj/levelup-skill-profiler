@@ -5,4 +5,7 @@ export const mockConsumedModules = [
   { module_id: "mod-python-basics", module_name: "Python Basics", completed_at: "2026-06-20" },
   { module_id: "mod-javascript-basics", module_name: "JavaScript Basics", completed_at: "2026-07-01" },
   { module_id: "mod-sql-basics", module_name: "SQL Basics", completed_at: "2026-07-10" },
+  { module_id: "mod-machine-learning", module_name: "Machine Learning", completed_at: "2026-07-12" },
 ];
+
+

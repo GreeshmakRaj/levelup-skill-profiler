@@ -31,8 +31,30 @@ export function SubtopicFilter({ subtopics, onChange }) {
         Subtopics
       </p>
 
-      {/* Select All (Moved to top) */}
-      <div className="border-b border-line pb-2 mb-2">
+      {/* Individual subtopics */}
+      <div className="max-h-48 overflow-y-auto pr-2 space-y-1.5">
+        {subtopics.map((subtopic) => (
+          <label
+            key={subtopic}
+            htmlFor={`${id}-${subtopic}`}
+            className="flex items-center gap-2.5 text-sm cursor-pointer group"
+          >
+            <input
+              id={`${id}-${subtopic}`}
+              type="checkbox"
+              checked={selected.has(subtopic)}
+              onChange={() => toggle(subtopic)}
+              className="accent-primary w-4 h-4 rounded cursor-pointer shrink-0"
+            />
+            <span className="text-ink group-hover:text-primary transition-colors">
+              {subtopic}
+            </span>
+          </label>
+        ))}
+      </div>
+
+      {/* Select All (Moved to bottom) */}
+      <div className="border-t border-line pt-2 mt-2">
         <label
           htmlFor={`${id}-all`}
           className={`flex items-center gap-2.5 text-sm group ${
@@ -49,7 +71,7 @@ export function SubtopicFilter({ subtopics, onChange }) {
             }}
             onChange={toggleAll}
             disabled={isSelectAllDisabled}
-            className={`accent-primary w-4 h-4 rounded ${
+            className={`accent-primary w-4 h-4 rounded shrink-0 ${
               isSelectAllDisabled ? "cursor-not-allowed grayscale" : "cursor-pointer"
             }`}
           />
@@ -61,28 +83,6 @@ export function SubtopicFilter({ subtopics, onChange }) {
             Select All
           </span>
         </label>
-      </div>
-
-      {/* Individual subtopics */}
-      <div className="space-y-1.5">
-        {subtopics.map((subtopic) => (
-          <label
-            key={subtopic}
-            htmlFor={`${id}-${subtopic}`}
-            className="flex items-center gap-2.5 text-sm cursor-pointer group"
-          >
-            <input
-              id={`${id}-${subtopic}`}
-              type="checkbox"
-              checked={selected.has(subtopic)}
-              onChange={() => toggle(subtopic)}
-              className="accent-primary w-4 h-4 rounded cursor-pointer"
-            />
-            <span className="text-ink group-hover:text-primary transition-colors">
-              {subtopic}
-            </span>
-          </label>
-        ))}
       </div>
     </div>
   );
