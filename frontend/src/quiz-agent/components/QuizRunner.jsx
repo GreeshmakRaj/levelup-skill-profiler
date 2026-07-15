@@ -23,7 +23,6 @@ export default function QuizRunner({
     nextQuestion,
     prevQuestion,
     setCurrentIndex,
-    retakeQuiz,
     reviewData,
   } = useQuiz(assessmentId)
   // should come from backend response 
@@ -34,6 +33,9 @@ export default function QuizRunner({
     "Arrays & Objects",
     "Async / Promises",
     "Error Handling",
+    "Modules & Imports",
+    "Testing & Debugging",
+    "Performance Optimization",
   ];
   // Full screen loading or submit spinners
   if (phase === 'loading' && !error) {
@@ -158,18 +160,26 @@ export default function QuizRunner({
   // RESULT PHASE
   if (phase === 'result') {
     return (
-      <div className="py-6">
+      <div className="relative py-6">
+        <button
+          type="button"
+          onClick={onBackToDashboard}
+          className="absolute left-0 top-0 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </button>
         <QuizResult
           result={result}
           reviewData={reviewData}
           assessmentInfo={assessmentInfo}
           questions={questions}
-          onRetake={retakeQuiz}
           onBackToDashboard={onBackToDashboard}
         />
       </div>
     )
   }
-
   return null
 }
+
+
