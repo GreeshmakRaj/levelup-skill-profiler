@@ -8,6 +8,11 @@ import SkillProfileCard from '../components/skills/SkillProfileCard'
 import LearningPathCard from '../components/skills/LearningPathCard'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useToast } from '../components/ui/Toast'
+import {
+  validateResumeFile,
+  MAX_RESUME_SIZE_MB,
+  MAX_RESUME_PAGES,
+} from '../utils/resumeValidator'
 
 const STEPS = ['Upload Resume', 'Roles', 'Skill Assessment (optional)', 'Review']
 
@@ -29,6 +34,8 @@ export default function LearningPaths() {
   const [form, setForm] = useState(emptyForm)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [resumeError, setResumeError] = useState('')
+  const [validatingResume, setValidatingResume] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -70,11 +77,28 @@ export default function LearningPaths() {
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
   function startNew() {
-    setForm(emptyForm); setStep(0); setError(''); setSelected(null); setView('analyze')
+    setForm(emptyForm); setStep(0); setError(''); setResumeError(''); setSelected(null); setView('analyze')
+  }
+
+  async function handleResumeChange(file) {
+    setResumeError('')
+    if (!file) { setField('resume', null); return }
+    setValidatingResume(true)
+    try {
+      const result = await validateResumeFile(file)
+      if (!result.valid) {
+        setField('resume', null)
+        setResumeError(result.error)
+        return
+      }
+      setField('resume', file)
+    } finally {
+      setValidatingResume(false)
+    }
   }
 
   const canNext = {
-    0: !!form.resume,
+    0: !!form.resume && !validatingResume,
     1: form.currentRole.trim() && form.targetRole.trim(),
     2: true, // self-assessment is optional
     3: true,
@@ -157,13 +181,29 @@ export default function LearningPaths() {
             {step === 0 && (
               <div>
                 <h2 className="font-semibold text-ink mb-1">Upload your resume</h2>
-                <p className="text-sm text-muted mb-5">PDF or DOCX</p>
+                <p className="text-sm text-muted mb-5">
+                  PDF or DOCX · up to {MAX_RESUME_SIZE_MB} MB · max {MAX_RESUME_PAGES} pages
+                </p>
                 <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition-colors ${
-                  form.resume ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10' : 'border-line hover:border-brand-300'
+                  resumeError
+                    ? 'border-red-400 bg-red-50 dark:bg-red-500/10'
+                    : form.resume
+                    ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10'
+                    : 'border-line hover:border-brand-300'
                 }`}>
-                  <input type="file" accept=".pdf,.docx" className="hidden"
-                    onChange={(e) => setField('resume', e.target.files[0] || null)} />
-                  {form.resume ? (
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    className="hidden"
+                    disabled={validatingResume}
+                    onChange={(e) => handleResumeChange(e.target.files[0] || null)}
+                  />
+                  {validatingResume ? (
+                    <>
+                      <span className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-2" />
+                      <p className="text-sm text-muted">Checking your file…</p>
+                    </>
+                  ) : form.resume ? (
                     <>
                       <svg className="w-8 h-8 text-brand-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -181,6 +221,14 @@ export default function LearningPaths() {
                     </>
                   )}
                 </label>
+                {resumeError && (
+                  <p
+                    role="alert"
+                    className="mt-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-xl px-4 py-2"
+                  >
+                    {resumeError}
+                  </p>
+                )}
               </div>
             )}
 
