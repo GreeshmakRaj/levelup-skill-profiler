@@ -29,7 +29,8 @@ function Logo({ className = 'w-6 h-6 text-white' }) {
 }
 
 export default function AuthPage() {
-  const { signIn } = useAuth()
+  const auth = useAuth()
+  const signIn = auth?.signIn ?? (() => ({ error: new Error('Auth not available') }))
   const navigate = useNavigate()
   const emailRef = useRef(null)
   const passwordRef = useRef(null)
