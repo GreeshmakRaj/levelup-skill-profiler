@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import LearningPaths from './pages/LearningPaths'
+import AiTutor from '../ai-tutor/pages/AiTutor'
 import RoadMapList from '../roadmaps/pages/RoadMapList'
 
 function FullScreenLoader() {
@@ -80,15 +81,15 @@ export default function App() {
             <ToastProvider>
               <Routes>
                 <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
-
                 <Route element={<Layout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/ai-tutor" element={<AiTutor />} />
                   <Route
                     path="/learning-paths"
                     element={
                       <ProtectedRoute roles={[ROLES.MANAGER, ROLES.EMPLOYEE]}>
                         <LearningPaths />
-                     </ProtectedRoute>
+                      </ProtectedRoute>
                     }
                   />
                   <Route path="/roadmaps-list" element={<RoadMapList />} />
