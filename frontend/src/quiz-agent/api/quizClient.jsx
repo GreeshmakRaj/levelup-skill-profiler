@@ -1,19 +1,38 @@
-// TODO: update import path when shared AuthContext is confirmed ready
-import { useAuth } from '../../skill-profiler-agent/hooks/useAuth'
+import { supabase } from './../../skill-profiler-agent/services/supabase'
 
-const BASE_URL = import.meta.env.VITE_QUIZ_API_URL || 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_QUIZ_API_URL || 'http://172.16.20.97:8001'
+
+async function getToken() {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token
+}
 
 function errorMessage(data, fallback) {
   return data?.message || data?.detail?.message || data?.detail || fallback
 }
 
-async function request(path, token, { method = 'GET', body } = {}) {
+async function handleSessionExpired() {
+  try {
+    await supabase.auth.signOut()
+  } catch {
+    /* ignore */
+  }
+  if (window.location.pathname !== '/auth') {
+    window.location.assign('/auth')
+  }
+}
+
+async function request(path, { method = 'GET', body } = {}) {
+  const token = await getToken()
   if (!token) {
+    await handleSessionExpired()
     throw new Error('Your session has expired. Please sign in again.')
   }
 
-  const headers = { Authorization: `Bearer ${token}` }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -22,6 +41,7 @@ async function request(path, token, { method = 'GET', body } = {}) {
   })
 
   if (res.status === 401) {
+    await handleSessionExpired()
     throw new Error('Your session has expired. Please sign in again.')
   }
 
@@ -31,41 +51,29 @@ async function request(path, token, { method = 'GET', body } = {}) {
   return data
 }
 
-/**
- * Custom hook that returns quiz API methods.
- * Each method attaches the JWT from useAuth() as Authorization: Bearer {token}.
- */
 export function useQuizApi() {
-  const { user } = useAuth()
-  const token = user?.access_token ?? null
-
   return {
-    /** GET /api/v1/assessments */
-    getAssessments() {
-      return request('/api/v1/assessments', token)
+    getEligibilitySummary: async (employeeId) => {
+      const data = await request(`/assessment/eligibility/${employeeId}/summary`)
+      return data.courses  // Extract courses from wrapper
     },
 
-    /** GET /api/v1/assessments/{id}/questions */
-    getQuestions(assessmentId) {
-      return request(`/api/v1/assessments/${assessmentId}/questions`, token)
-    },
-
-    /** POST /api/v1/assessments/{id}/submit */
-    submitAssessment(assessmentId, answers) {
-      return request(`/api/v1/assessments/${assessmentId}/submit`, token, {
+    takeAssessment: async (payload) => {
+      return request('/assessment/take-assessment/', {
         method: 'POST',
-        body: { answers },
+        body: payload,
       })
     },
 
-    /** GET /api/v1/assessments/{id}/history */
-    getHistory(assessmentId) {
-      return request(`/api/v1/assessments/${assessmentId}/history`, token)
+    submitAssessment: async (payload) => {
+      return request('/assessment/submit-assessment/', {
+        method: 'POST',
+        body: payload,
+      })
     },
 
-    /** GET /api/v1/assessments/history */
-    getAssessmentHistory() {
-      return request('/api/v1/assessments/history', token)
+    getReview: async (assessmentId) => {
+      return request(`/assessment/submit-assessment/${assessmentId}/review`)
     },
   }
 }

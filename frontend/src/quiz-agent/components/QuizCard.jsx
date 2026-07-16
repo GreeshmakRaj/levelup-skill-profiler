@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-function getActionState(assessment) {
-  const status = assessment?.status
-  const passFailStatus = assessment?.evaluation?.pass_fail_status
+function getActionState(course) {
+  const status = course?.status
+  const passFailStatus = course?.evaluation?.pass_fail_status
 
   if (status === 'Not Started') {
     return { text: 'Start Assessment', variant: 'btn-primary' }
@@ -44,12 +44,12 @@ function getProgressWidth(score, total) {
   return 'w-1/5'
 }
 
-export default function QuizCard({ assessment, onStart }) {
+export default function QuizCard({ course, onStart }) {
   const navigate = useNavigate()
-  const actionState = getActionState(assessment)
-  const evaluation = assessment?.evaluation || {}
+  const actionState = getActionState(course)
+  const evaluation = course?.evaluation || {}
   const score = evaluation.score
-  const totalQuestions = evaluation.total_questions || assessment?.question_count || 0
+  const totalQuestions = evaluation.total_questions || course?.question_count || 0
   const hasScore = score !== null && score !== undefined
   const progressColor = evaluation.pass_fail_status === 'Pass' ? 'bg-green-500' : 'bg-red-500'
 
@@ -58,8 +58,8 @@ export default function QuizCard({ assessment, onStart }) {
       <div>
         <div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-bold text-ink" title={assessment?.course_name}>
-              {assessment?.course_name || 'Untitled Assessment'}
+            <h2 className="truncate text-sm font-bold text-ink" title={course?.course_name}>
+              {course?.course_name || 'Untitled Assessment'}
             </h2>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function QuizCard({ assessment, onStart }) {
       <div className="mt-3 flex flex-col items-center">
         <button
           type="button"
-          onClick={() => onStart?.(assessment)}
+          onClick={() => onStart?.(course)}
           className={`w-full !py-2 text-sm ${actionState.variant}`}
         >
           {actionState.text}
@@ -89,7 +89,7 @@ export default function QuizCard({ assessment, onStart }) {
         {hasScore && (
           <button
             type="button"
-            onClick={() => navigate(`/quiz/${assessment.assessment_id}/attempts`)}
+            onClick={() => navigate(`/quiz/${course.course_id}/attempts`)}
             className="mt-1.5 text-xs cursor-pointer hover:underline focus:outline-none focus:ring-0 active:bg-transparent hover:bg-transparent bg-transparent shadow-none"
           >
             View attempt history &rarr;

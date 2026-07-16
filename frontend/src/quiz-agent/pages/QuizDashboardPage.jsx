@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuizApi } from '../api/quizClient'
+import { useAuth } from '../../skill-profiler-agent/hooks/useAuth'
 import QuizCard from '../components/QuizCard'
-import { mockAssessments } from '../mockData'
-import { mockConsumedModules } from '../mockTeam3Data'
 
-// TEMP DEMO MODE: reading from mockData.js instead of useQuizApi().
-// Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
 const STATUS_MAP = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' }
 
 const TABS = [
@@ -16,13 +14,13 @@ const TABS = [
 
 function toComponentShape(a) {
   return {
-    assessment_id: a.id,
-    course_name: a.title,
-    module_name: a.description,
-    topics: [],
-    difficulty: 'Intermediate',
-    status: STATUS_MAP[a.status] || a.status,
-    question_count: a.question_count,
+    course_id: a.course_id || a.id,
+    course_name: a.course_name || a.title,
+    module_name: a.module_name || a.description,
+    topics: a.topics || [],
+    difficulty: a.difficulty || 'Intermediate',
+    status: STATUS_MAP[a.status] || a.status || 'Not Started',
+    question_count: a.question_count || 10,
     evaluation: {
       score: a.last_score,
       total_questions: a.question_count,
@@ -50,6 +48,7 @@ function SkeletonCard() {
     </div>
   )
 }
+
 export default function QuizDashboardPage() {
   const navigate = useNavigate()
   const [assessments, setAssessments] = useState([])
@@ -57,39 +56,50 @@ export default function QuizDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  const api = useQuizApi()
+
   useEffect(() => {
     let cancelled = false
 
-    // TEMP DEMO: simulate async fetch from mock data
-    const timer = setTimeout(() => {
-      if (!cancelled) {
-        // TODO: replace mockConsumedModules with real Team 3 API call when available.
-        const consumedIds = new Set(mockConsumedModules.map((m) => m.module_id))
-        const availableAssessments = mockAssessments.filter((a) => consumedIds.has(a.module_id))
-
-        setAssessments(availableAssessments.map(toComponentShape))
-        setLoading(false)
+    const fetchCourses = async () => {
+      setLoading(true)
+      try {
+        console.log('Fetching courses...')
+        // TODO: Replace hardcoded user ID with real mapping from Supabase user.id to employee/assessment ID
+        const courses = await api.getEligibilitySummary('02120dd4-9d27-4b79-8d4a-cbe52191a79a')
+        console.log('Courses loaded:', courses)
+        if (!cancelled) {
+          setAssessments(courses.map(toComponentShape))
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Error loading courses:', err.message)
+        if (!cancelled) {
+          setError(err.message)
+          setLoading(false)
+        }
       }
-    }, 300)
+    }
+
+    fetchCourses()
 
     return () => {
       cancelled = true
-      clearTimeout(timer)
     }
   }, [])
 
   function handleRetry() {
     setError(false)
     setLoading(true)
-    // TEMP DEMO: simulate retry with mock data
-    setTimeout(() => {
-      // TODO: replace mockConsumedModules with real Team 3 API call when available.
-      const consumedIds = new Set(mockConsumedModules.map((m) => m.module_id))
-      const availableAssessments = mockAssessments.filter((a) => consumedIds.has(a.module_id))
-
-      setAssessments(availableAssessments.map(toComponentShape))
+    
+    // TODO: Replace hardcoded user ID with real mapping from Supabase user.id to employee/assessment ID
+    api.getEligibilitySummary('02120dd4-9d27-4b79-8d4a-cbe52191a79a').then(courses => {
+      setAssessments(courses.map(toComponentShape))
       setLoading(false)
-    }, 300)
+    }).catch(err => {
+      setError(err.message)
+      setLoading(false)
+    })
   }
 
   const visibleAssessments = activeTab === 'all'
@@ -131,11 +141,10 @@ export default function QuizDashboardPage() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                  isActive
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${isActive
                     ? 'bg-card text-brand-700 shadow-sm dark:text-brand-400'
                     : 'text-muted hover:text-ink'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -157,11 +166,11 @@ export default function QuizDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start gap-4">
-          {visibleAssessments.map((assessment) => (
+          {visibleAssessments.map((course) => (
             <QuizCard
-              key={assessment.assessment_id}
-              assessment={assessment}
-              onStart={(a) => navigate(`/quiz/${a.assessment_id}`)}
+              key={course.course_id}
+              course={course}
+              onStart={(c) => navigate(`/quiz/${c.course_id}`, { state: { course: c } })}
             />
           ))}
         </div>
@@ -169,9 +178,3 @@ export default function QuizDashboardPage() {
     </div>
   )
 }
-
-
-
-
-
-

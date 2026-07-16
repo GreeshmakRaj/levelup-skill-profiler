@@ -1,24 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import QuizRunner from '../components/QuizRunner'
-import { mockAssessments } from '../mockData'
 import { AlertCircle } from 'lucide-react'
 
-// TEMP DEMO MODE: reading from mockData.js instead of useQuizApi().
-// Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
-const STATUS_MAP = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' }
-
-function toComponentShape(a) {
-  return {
-    assessment_id: a.id,
-    course_name: a.title,
-    module_name: a.description,
-    topics: a.topics || [],
-    difficulty: 'Intermediate',
-    status: STATUS_MAP[a.status] || a.status,
-    question_count: a.question_count,
-  }
-}
 
 const MODULE_TO_ASSESSMENT = {
   'mod_01': 'asmt-01',
@@ -42,40 +26,39 @@ export default function QuizPage() {
     resolvedAssessmentId = MODULE_TO_ASSESSMENT[moduleId] || null
   }
 
-  const [assessmentInfo, setAssessmentInfo] = useState(null)
-  const [infoLoading, setInfoLoading] = useState(!!resolvedAssessmentId)
+  const location = useLocation()
+  const course = location.state?.course
+
+  const [assessmentInfo, setAssessmentInfo] = useState(course || null)
+  const [infoLoading, setInfoLoading] = useState(!course && !!resolvedAssessmentId)
 
   // Adjust state during render if resolvedAssessmentId changes
   const [prevResolvedId, setPrevResolvedId] = useState(resolvedAssessmentId)
   if (resolvedAssessmentId !== prevResolvedId) {
     setPrevResolvedId(resolvedAssessmentId)
-    setInfoLoading(!!resolvedAssessmentId)
+    if (!course) {
+      setInfoLoading(!!resolvedAssessmentId)
+    }
   }
 
   useEffect(() => {
+    if (course) return // Already have the course from state
     if (!resolvedAssessmentId) return
 
-    // TEMP DEMO: look up assessment info from mock data
+    // Fallback if accessed directly without state
     const timer = setTimeout(() => {
-      const allAssessments = mockAssessments.map(toComponentShape)
-      const matched = allAssessments.find((a) => a.assessment_id === resolvedAssessmentId)
-      if (matched) {
-        setAssessmentInfo(matched)
-      } else {
-        // Fallback meta info
-        setAssessmentInfo({
-          assessment_id: resolvedAssessmentId,
-          course_name: 'GenAI Course Assessment',
-          module_name: null,
-          topics: [],
-          difficulty: 'Intermediate',
-        })
-      }
+      setAssessmentInfo({
+        assessment_id: resolvedAssessmentId,
+        course_name: 'GenAI Course Assessment',
+        module_name: null,
+        topics: [],
+        difficulty: 'Intermediate',
+      })
       setInfoLoading(false)
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [resolvedAssessmentId])
+  }, [resolvedAssessmentId, course])
 
   // Center error screen if neither assessment ID nor module ID was successfully resolved
   if (!resolvedAssessmentId) {

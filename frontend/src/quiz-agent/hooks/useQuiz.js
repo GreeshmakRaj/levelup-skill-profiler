@@ -1,98 +1,9 @@
 import { useState, useEffect } from 'react'
-import { mockQuestions } from '../mockData'
-
-// TEMP DEMO MODE: reading from mockData.js instead of the real API.
-// Revert to useQuizApi() once VITE_QUIZ_API_URL and auth are ready.
-
-// DEMO: scoring is illustrative only, real grading happens server-side.
-const DEMO_CORRECT_ANSWERS = {
-  // Python Fundamentals
-  'q-546b29e3': 'c', // tuple is immutable
-  'q-a453ae76': 'b', // order guaranteed since 3.6
-  'q-018352b5': 'a', // singleton = one instance
-  'q-d612fc9e': 'c', // abstract factory
-  'q-967be8ff': 'a', // else when condition becomes false
-  'q-f7cb8a75': 'c', // range(len(sequence))
-  'q-d18a5635': 'a', // same name, different params allowed in Python
-  'q-d10ea9f0': 'b', // __init__ initializes attributes
-  'q-63c626c8': 'a', // True — functions are first-class
-  'q-166bf70e': 'a', // list is mutable
-  'q-7b2c8d11': 'c', // len()
-  'q-92f41ac3': ['a', 'c', 'd'], // list, dictionary, set are mutable
-  'q-c84de732': ['a', 'b', 'd'], // {}, dict(), {'a': 1}
-  'q-e31abf90': 'a', // True — Python supports multiple inheritance
-  'q-5fa93d47': ['a', 'b', 'c'], // functions as variables, args, return functions
-
-  // JavaScript Fundamentals
-  'js-q1': 'b',  // let
-  'js-q2': 'b',  // object
-  'js-q3': 'a',  // push()
-  'js-q4': 'c',  // ===
-  'js-q5': 'a',  // Document Object Model
-  'js-q6': ['a', 'b', 'c'], // string, number, boolean
-  'js-q7': 'b',  // JSON.parse()
-  'js-q8': 'a',  // True — first-class functions
-  'js-q9': 'c',  // this
-  'js-q10': ['a', 'b', 'd'], // map(), filter(), slice()
-  'js-q11': 'a', // for
-  'js-q12': 'b', // number
-  'js-q13': 'd', // break
-  'js-q14': 'b', // False — const cannot be reassigned
-  'js-q15': ['a', 'b', 'c'], // function decl, arrow, function expr
-
-  // SQL & Database Basics
-  'sql-q1': 'b',  // SELECT
-  'sql-q2': 'c',  // WHERE
-  'sql-q3': 'a',  // uniquely identifies a row
-  'sql-q4': 'b',  // INSERT
-  'sql-q5': 'c',  // INNER JOIN
-  'sql-q6': ['a', 'b', 'c'], // COUNT, SUM, AVG
-  'sql-q7': 'a',  // Structured Query Language
-  'sql-q8': 'a',  // True — one primary key
-  'sql-q9': 'c',  // UPDATE
-  'sql-q10': 'b', // ORDER BY
-  'sql-q11': ['a', 'b'], // PRIMARY KEY, UNIQUE
-  'sql-q12': 'c', // TRUNCATE
-  'sql-q13': 'b', // Reducing data duplication
-  'sql-q14': 'a', // True — FK references PK
-  'sql-q15': ['a', 'b'], // GROUP BY, HAVING
-  // Machine Learning
-  'ml-q1': 'a',
-  'ml-q2': 'c',
-  'ml-q3': 'a',
-  'ml-q4': 'a',
-  'ml-q5': 'a',
-  'ml-q6': ['a', 'b'],
-  'ml-q7': 'b',
-  'ml-q8': 'a',
-  'ml-q9': 'a',
-  'ml-q10': 'a',
-  'ml-q11': 'a',
-  'ml-q12': ['a', 'b', 'c'],
-  'ml-q13': 'a',
-  'ml-q14': 'a',
-  'ml-q15': ['a', 'b', 'c'],
-}
-
-const isMultiSelect = (type) => type === 'Multiple Select' || type === 'MSQ'
-
-/**
- * Transforms raw mock questions into the shape the components expect.
- */
-function getMockQuestions(assessmentId) {
-  const raw = mockQuestions[assessmentId] || []
-  return raw.map((q) => ({
-    question_id: q.id,
-    question_text: q.question_text,
-    question_type: q.question_type,
-    options: q.options, // object { a: "text", ... } — QuestionDisplay now handles this shape
-    points: 10,
-    hint: null,
-    sequence_number: q.sequence_number,
-  }))
-}
+import { useQuizApi } from '../api/quizClient'
 
 export default function useQuiz(assessmentId) {
+  const api = useQuizApi()
+  const [currentAttemptId, setCurrentAttemptId] = useState(null)
   const [phase, setPhase] = useState('loading')
   const [questions, setQuestions] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -111,39 +22,76 @@ export default function useQuiz(assessmentId) {
   useEffect(() => {
     if (!assessmentId) return
 
-    // TEMP DEMO: simulate async fetch from mock data
-    const timer = setTimeout(() => {
-      try {
-        const data = getMockQuestions(assessmentId)
-        setQuestions(data)
-        setPhase('intro')
-      } catch (err) {
-        setError(err?.message || 'Failed to load assessment questions.')
+    const savedSession = localStorage.getItem('quizSession')
+    const savedAnswers = localStorage.getItem('quizAnswers')
+    
+    if (savedSession) {
+      const session = JSON.parse(savedSession)
+      setCurrentAttemptId(session.assessmentId)
+      setQuestions(session.questions)
+      setCurrentIndex(session.currentIndex || 0)
+      setPhase('active')
+      
+      if (savedAnswers) {
+        setAnswers(JSON.parse(savedAnswers))
       }
-    }, 300)
-
-    return () => clearTimeout(timer)
+    } else {
+      setPhase('intro')
+    }
   }, [assessmentId])
 
-  function startQuiz() {
-    setPhase('active')
-    setCurrentIndex(0)
+  async function startQuiz(payload) {
+    setPhase('loading')
     setError(null)
+    
+    try {
+      const res = await api.takeAssessment(payload)
+      const normalizedQuestions = (res.questions || []).map(q => ({
+        ...q,
+        question_id: q.id // Normalize for frontend
+      }))
+      setCurrentAttemptId(res.assessment_id)
+      setQuestions(normalizedQuestions)
+      setCurrentIndex(0)
+      setPhase('active')
+      
+      localStorage.setItem('quizSession', JSON.stringify({
+        assessmentId: res.assessment_id,
+        questions: normalizedQuestions,
+        currentIndex: 0
+      }))
+    } catch (err) {
+      setError(err?.message || 'Failed to start assessment.')
+      setPhase('intro')
+    }
   }
 
   function answerQuestion(questionId, answer) {
     const question = questions.find((q) => q.question_id === questionId)
     if (!question) return
 
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: answer,
-    }))
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: answer }
+      localStorage.setItem('quizAnswers', JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  function updateSessionIndex(newIndex) {
+    const saved = localStorage.getItem('quizSession')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      localStorage.setItem('quizSession', JSON.stringify({ ...parsed, currentIndex: newIndex }))
+    }
   }
 
   function nextQuestion() {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1)
+      setCurrentIndex((prev) => {
+        const next = prev + 1
+        updateSessionIndex(next)
+        return next
+      })
     } else {
       submitQuiz()
     }
@@ -151,70 +99,49 @@ export default function useQuiz(assessmentId) {
 
   function prevQuestion() {
     if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1)
+      setCurrentIndex((prev) => {
+        const next = prev - 1
+        updateSessionIndex(next)
+        return next
+      })
     }
   }
 
-  function submitQuiz() {
+  async function submitQuiz() {
     setPhase('submitting')
     setError(null)
 
-    // Answers are already stored as option keys (e.g., "a", "b") — no conversion needed.
-    const formattedAnswers = questions.map((q) => ({
-      question_id: q.question_id,
-      submitted_answer: answers[q.question_id] ?? null,
-    }))
-
-    // TEMP DEMO: simulate async submit with mock scoring
-    setTimeout(() => {
-      try {
-        // DEMO: scoring is illustrative only, real grading happens server-side.
-        const responses = formattedAnswers.map((a, i) => {
-          const correctKey = DEMO_CORRECT_ANSWERS[a.question_id]
-          let isCorrect = false
-          if (Array.isArray(correctKey)) {
-            // MSQ: compare sorted arrays
-            const submitted = Array.isArray(a.submitted_answer) ? [...a.submitted_answer].sort() : []
-            isCorrect = submitted.length === correctKey.length && submitted.every((v, i) => v === [...correctKey].sort()[i])
-          } else {
-            isCorrect = a.submitted_answer === correctKey
-          }
-          const question = questions[i]
-          return {
-            response_id: `resp-${String(i + 1).padStart(2, '0')}`,
-            question_id: a.question_id,
-            submitted_answer: a.submitted_answer,
-            is_correct: isCorrect,
-            points_earned: isCorrect ? (question?.points ?? 10) : 0,
-            correct_answer: correctKey && question?.options ? question.options[correctKey] : null,
-            ai_feedback: isCorrect
-              ? 'Correct! Well done.'
-              : 'Incorrect. Review this topic and try again.',
-          }
-        })
-
-        const score = responses.filter((r) => r.is_correct).length
-        const totalQuestions = questions.length
-        const passFailStatus = score >= Math.ceil(totalQuestions * 0.6) ? 'Pass' : 'Fail'
-
-        setResult({
-          assessment_id: assessmentId,
-          status: 'Completed',
-          evaluation: {
-            evaluation_id: 'eval-demo-01',
-            score,
-            total_questions: totalQuestions,
-            pass_fail_status: passFailStatus,
-            evaluated_at: new Date().toISOString(),
-          },
-          responses,
-        })
-        setPhase('result')
-      } catch (err) {
-        setError(err?.message || 'Failed to submit assessment. Please try again.')
-        setPhase('active')
+    // Answers are already stored as option keys (e.g., "a", "b").
+    // We must wrap them in an array for the backend.
+    const formattedAnswers = questions.map((q) => {
+      const ans = answers[q.question_id]
+      return {
+        question_id: q.question_id,
+        submitted_answer: ans ? (Array.isArray(ans) ? ans : [ans]) : [],
       }
-    }, 500)
+    })
+
+    const payload = {
+      assessment_id: currentAttemptId,
+      answers: formattedAnswers
+    }
+
+    console.log('Submit payload:', payload)
+    console.log('Submit payload JSON:', JSON.stringify(payload, null, 2))
+
+    try {
+      await api.submitAssessment(payload)
+      const reviewRes = await api.getReview(currentAttemptId)
+      setResult(reviewRes)
+      setPhase('result')
+      
+      // Clear saved session after completion
+      localStorage.removeItem('quizSession')
+      localStorage.removeItem('quizAnswers')
+    } catch (err) {
+      setError(err?.message || 'Failed to submit assessment. Please try again.')
+      setPhase('active')
+    }
   }
 
   function retakeQuiz() {

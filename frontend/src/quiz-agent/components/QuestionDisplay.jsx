@@ -198,14 +198,24 @@ export default function QuestionDisplay({
         ) : (
           <div />
         )}
-        <button
-          type="button"
-          onClick={handleNext}
-          className="btn-primary !py-1.5 !px-3 !text-sm"
-        >
-          {currentIndex === totalQuestions - 1 ? 'Submit Assessment' : 'Next'}
-          {currentIndex !== totalQuestions - 1 && <ChevronRight className="h-4 w-4" />}
-        </button>
+        {currentIndex === totalQuestions - 1 ? (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="btn-primary !py-1.5 !px-3 !text-sm"
+          >
+            Submit Assessment
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="btn-primary !py-1.5 !px-3 !text-sm"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   )

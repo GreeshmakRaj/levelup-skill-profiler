@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
+import { useAuth } from '../../skill-profiler-agent/hooks/useAuth'
 import useQuiz from '../hooks/useQuiz'
 import QuestionDisplay from './QuestionDisplay'
 import QuestionsList from './QuestionsList'
@@ -6,11 +7,12 @@ import QuizResult from './QuizResult'
 import { AlertCircle, ChevronLeft } from 'lucide-react'
 import { SubtopicFilter } from './SubtopicFilter'
 
-export default function QuizRunner({
+const QuizRunner = memo(function QuizRunner({
   assessmentId,
   assessmentInfo,
   onBackToDashboard,
 }) {
+  const { user } = useAuth()
   const {
     phase,
     questions,
@@ -26,15 +28,8 @@ export default function QuizRunner({
     retakeQuiz,
     reviewData,
   } = useQuiz(assessmentId)
-  // should come from backend response 
-  const SUBTOPICS = [
-    "Variables & Data Types",
-    "Control Flow",
-    "Functions & Scope",
-    "Arrays & Objects",
-    "Async / Promises",
-    "Error Handling",
-  ];
+  const SUBTOPICS = assessmentInfo?.topics || []
+  const [selectedTopics, setSelectedTopics] = useState(SUBTOPICS)
   // Full screen loading or submit spinners
   if (phase === 'loading' && !error) {
     return (
@@ -100,7 +95,7 @@ export default function QuizRunner({
           <div className="mt-6 border-y border-line py-3">
             <SubtopicFilter
               subtopics={SUBTOPICS}
-              onChange={(selected) => console.log("Active subtopics:", selected)}
+              onChange={(selected) => setSelectedTopics(selected)}
             />
 
           </div>
@@ -111,7 +106,20 @@ export default function QuizRunner({
 
           <button
             type="button"
-            onClick={startQuiz}
+            onClick={() => {
+              const payload = {
+                user_id: user?.id,
+                course_id: assessmentInfo.course_id,
+                course_name: assessmentInfo.course_name,
+                module_id: assessmentInfo.module_id || null,
+                module_name: assessmentInfo.module_name || null,
+                topic_selection_type: "all_topics",
+                topics: selectedTopics,
+                difficulty: assessmentInfo.difficulty
+              }
+              console.log('Payload being sent:', payload)
+              startQuiz(payload)
+            }}
             className="btn-primary mt-6 w-full"
           >
             Start Assessment
@@ -172,4 +180,6 @@ export default function QuizRunner({
   }
 
   return null
-}
+})
+
+export default QuizRunner

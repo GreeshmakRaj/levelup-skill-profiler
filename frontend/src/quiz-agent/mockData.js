@@ -1,5 +1,6 @@
-// Mock data for demo purposes — shaped to match the real backend response structure.
-// Replace with real API calls once VITE_QUIZ_API_URL is wired up.
+// TEMP DEMO: Mock data for development/testing only
+// In production, all data comes from real API endpoints
+// This is kept as a fallback for when VITE_QUIZ_API_URL is not configured
 
 export const mockAssessments = [
   {

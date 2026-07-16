@@ -11,10 +11,10 @@ export default function QuizResult({
 
   if (!result) return null
 
-  const { evaluation, responses } = result
-  const score = evaluation?.score ?? 0
-  const totalQuestions = evaluation?.total_questions ?? 0
-  const isPass = evaluation?.pass_fail_status === 'Pass'
+  const score = result?.score ?? 0
+  const totalQuestions = result?.total_questions ?? 0
+  const isPass = result?.pass_fail_status === 'Pass'
+  const answers = result?.answers ?? []
 
   // Map question_id to question object for text & points lookup
   const questionMap = Object.fromEntries(
@@ -66,19 +66,18 @@ export default function QuizResult({
           </h3>
 
         <div className="mt-4 divide-y divide-line">
-          {responses.map((resp, index) => {
-            const questionObj = questionMap[resp.question_id]
-            const totalPoints = questionObj?.points ?? 20
-            const displayAnswer = Array.isArray(resp.correct_answer)
-              ? resp.correct_answer.join(', ')
-              : resp.correct_answer
+          {answers.map((answer, index) => {
+            const questionObj = questionMap[answer.question_id]
+            const displayAnswer = Array.isArray(answer.correct_answer)
+              ? answer.correct_answer.join(', ')
+              : answer.correct_answer
 
             return (
-              <div key={resp.response_id} className="py-5 first:pt-0 last:pb-0">
+              <div key={answer.question_id} className="py-5 first:pt-0 last:pb-0">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 shrink-0">
-                      {resp.is_correct ? (
+                      {answer.is_correct ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
@@ -95,17 +94,7 @@ export default function QuizResult({
                       )}
                     </div>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-muted">
-                    {resp.points_earned} / {totalPoints} pts
-                  </span>
                 </div>
-
-                {/* AI Feedback */}
-                {resp.ai_feedback && (
-                  <div className="ml-8 mt-2 rounded-lg bg-surface p-3 text-xs italic text-muted border border-line">
-                    {resp.ai_feedback}
-                  </div>
-                )}
 
                 {/* Correct Answer Reveal */}
                 {displayAnswer && (
