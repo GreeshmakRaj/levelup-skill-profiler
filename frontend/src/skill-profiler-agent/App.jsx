@@ -7,6 +7,7 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import LearningPaths from "./pages/LearningPaths";
 import RoadMapList from "../roadmaps/pages/RoadMapList";
+import AiTutor from '../ai-tutor/pages/AiTutor'
 
 function FullScreenLoader() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
                 </ProtectedRoute>
               }>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/ai-tutor" element={<AiTutor />} />
               <Route
                 path="/learning-paths"
                 element={
