@@ -25,11 +25,11 @@ export default function QuizResult({
   const moduleName = assessmentInfo?.module_name || 'Module Quiz'
 
   return (
-    <div className="card mx-auto w-full max-w-[600px]">
+    <div className="card mx-auto w-full max-w-[520px] !p-5">
       {/* Top Section - Score Summary */}
       <div className="text-center">
         <div
-          className={`mx-auto flex h-32 w-32 items-center justify-center rounded-full border-4 text-3xl font-extrabold shadow-sm ${isPass
+          className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full border-[3px] text-2xl font-extrabold shadow-sm ${isPass
               ? 'border-green-500 text-green-600 bg-green-50/20'
               : 'border-red-500 text-red-600 bg-red-50/20'
             }`}
@@ -38,24 +38,16 @@ export default function QuizResult({
         </div>
 
         <h2
-          className={`mt-4 text-2xl font-bold tracking-tight ${isPass ? 'text-green-600' : 'text-red-600'
+          className={`mt-3 text-xl font-bold tracking-tight ${isPass ? 'text-green-600' : 'text-red-600'
             }`}
         >
           {isPass ? 'Passed!' : 'Failed'}
         </h2>
 
-        <h1 className="mt-2 text-lg font-bold text-ink">{courseName}</h1>
-        {moduleName && <p className="mt-1 text-sm text-muted">{moduleName}</p>}
+        <h1 className="mt-1.5 text-base font-bold text-ink">{courseName}</h1>
+        {moduleName && <p className="mt-1 text-xs text-muted">{moduleName}</p>}
         
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={() => setShowBreakdown(!showBreakdown)}
-            className="btn-ghost"
-          >
-            {showBreakdown ? "Hide Breakdown" : "Show Breakdown"}
-          </button>
-        </div>
+
       </div>
 
       {/* Middle Section - Question Breakdown */}
@@ -88,7 +80,7 @@ export default function QuizResult({
                         Question {index + 1}
                       </h4>
                       {questionObj?.question_text && (
-                        <p className="mt-1 text-sm text-ink leading-relaxed">
+                        <p className="mt-1 text-xs text-ink leading-relaxed">
                           {questionObj.question_text}
                         </p>
                       )}
@@ -110,17 +102,20 @@ export default function QuizResult({
       )}
 
       {/* Bottom Section - Action Buttons */}
-      <div className="mt-8 flex justify-center border-t border-line pt-6">
+      <div className="mt-5 flex justify-center border-t border-line pt-4">
         <button
           type="button"
-          onClick={onBackToDashboard}
-          className="btn-primary w-full max-w-[260px]"
+          onClick={() => setShowBreakdown(!showBreakdown)}
+          className="btn-primary w-auto min-w-[150px] !px-5 !py-1.5 text-sm"
         >
-          Back to Dashboard
+          {showBreakdown ? "Hide Breakdown" : "Show Breakdown"}
         </button>
       </div>
     </div>
   )
 }
+
+
+
 
 
