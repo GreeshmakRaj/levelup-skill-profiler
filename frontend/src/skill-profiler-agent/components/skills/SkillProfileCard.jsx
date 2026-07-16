@@ -9,6 +9,7 @@ export default function SkillProfileCard({ profile }) {
   const [generating, setGenerating] = useState(false)
   const [hasRoadmap, setHasRoadmap] = useState(false)
   const [checkingRoadmap, setCheckingRoadmap] = useState(true)
+  const [availableWeeks, setAvailableWeeks] = useState('')
   const navigate = useNavigate()
   const auth = useAuth()
   const toast = useToast()
@@ -40,7 +41,7 @@ export default function SkillProfileCard({ profile }) {
 
     setGenerating(true)
     try {
-      const roadmap = await generateRoadmap(profile.skillId)
+      const roadmap = await generateRoadmap(profile.skillId, availableWeeks || undefined)
       toast.success('Roadmap generated successfully!')
       navigate(`/roadmaps-list?skillid=${roadmap.skill_id}`)
     } catch (err) {
@@ -72,6 +73,22 @@ export default function SkillProfileCard({ profile }) {
       <div className="card">
         <div className="flex items-start justify-between mb-4">
           <h2 className="text-sm font-semibold text-faint uppercase tracking-wider">Role Analysis</h2>
+          <div className="flex items-center gap-2">
+          {!hasRoadmap && !checkingRoadmap && (
+            <select
+              value={availableWeeks}
+              onChange={e => setAvailableWeeks(e.target.value)}
+              disabled={generating}
+              title="How many weeks are you available?"
+              className="px-2 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-ink dark:bg-gray-800 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">Full plan (up to 12 wks)</option>
+              <option value="4">4 weeks</option>
+              <option value="6">6 weeks</option>
+              <option value="8">8 weeks</option>
+              <option value="10">10 weeks</option>
+            </select>
+          )}
           <button
             onClick={hasRoadmap ? handleViewRoadmap : handleGenerateRoadmap}
             disabled={generating || checkingRoadmap}
@@ -110,6 +127,7 @@ export default function SkillProfileCard({ profile }) {
               </>
             )}
           </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

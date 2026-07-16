@@ -57,10 +57,12 @@ async function request(path, { method = 'GET', body } = {}) {
 /**
  * Generate a roadmap for a given skill
  * @param {string} skillId - The skill ID to generate roadmap for
+ * @param {number} [availableWeeks] - Optional cap on roadmap length (1-12 weeks)
  * @returns {Promise<Object>} - The generated roadmap
  */
-export async function generateRoadmap(skillId) {
-  return request(`/api/v1/skills/${skillId}/roadmap`, { method: 'POST' })
+export async function generateRoadmap(skillId, availableWeeks) {
+  const queryParams = availableWeeks ? `?available_weeks=${availableWeeks}` : ''
+  return request(`/api/v1/skills/${skillId}/roadmap${queryParams}`, { method: 'POST' })
 }
 
 /**
