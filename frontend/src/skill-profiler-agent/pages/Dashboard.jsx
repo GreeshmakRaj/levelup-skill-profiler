@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { listMySkills, listUsers, deleteSkill } from '../services/api'
+import { supabase } from '../services/supabase'
 import { ROLES } from '../constants/roles'
 import ProfileSummaryCard from '../components/skills/ProfileSummaryCard'
 import UserManagement from '../components/users/UserManagement'
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [dataLoading, setDataLoading] = useState(true)
   const [toDelete, setToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const isAssessor = role === ROLES.MANAGER || role === ROLES.EMPLOYEE
   const isAdmin = role === ROLES.ADMIN
@@ -50,6 +52,23 @@ export default function Dashboard() {
   const reloadSkills = useCallback(() => {
     listMySkills().then(setSkills).catch(() => {})
   }, [])
+
+  async function copyApiKey() {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) {
+      toast.error('No active session token.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(token)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      toast.success('Current API key copied.')
+    } catch {
+      toast.error('Could not copy the API key.')
+    }
+  }
 
   async function confirmDelete() {
     setDeleting(true)
@@ -106,6 +125,28 @@ export default function Dashboard() {
           title={`Welcome${profile?.username ? `, ${profile.username}` : ''}`}
           subtitle={isAdmin ? 'Administer your organization’s users and access.' : 'Here’s an overview of your skill journey.'}
         />
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <button
+            onClick={copyApiKey}
+            title="Copy your current API key (access token)"
+            className="group inline-flex items-center gap-2.5 rounded-xl border border-line bg-card px-5 py-3 text-base text-ink shadow-sm transition-all hover:border-brand-300 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          >
+            <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4-2a6 6 0 01-7.743 5.743L11 14H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            <span className="font-semibold">{copied ? 'Copied' : 'Copy API key'}</span>
+            {copied ? (
+              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-faint group-hover:text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2v-2" />
+              </svg>
+            )}
+          </button>
+          <p className="text-xs text-faint">you can access api's using token</p>
+        </div>
       </div>
 
       {/* Stat cards */}
