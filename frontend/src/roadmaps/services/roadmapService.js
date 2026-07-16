@@ -3,7 +3,7 @@
 
 import { supabase } from "../../skill-profiler-agent/services/supabase";
 
-const BASE_URL = import.meta.env.VITE_LEARNING_API_URL || "http://localhost:8001";
+const BASE_URL = import.meta.env.VITE_TEAM_2_ROADMAP_API_URL || "http://localhost:8001";
 
 async function getToken() {
   const { data } = await supabase.auth.getSession();

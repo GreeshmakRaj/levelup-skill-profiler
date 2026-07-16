@@ -6,6 +6,7 @@ import Layout from "./components/layout/Layout";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import LearningPaths from "./pages/LearningPaths";
+import RoadMapList from "../roadmaps/pages/RoadMapList";
 
 function FullScreenLoader() {
   return (
