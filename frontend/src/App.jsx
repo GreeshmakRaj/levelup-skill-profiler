@@ -8,6 +8,8 @@ import Dashboard from "./skill-profiler-agent/pages/Dashboard";
 import LearningPaths from "./skill-profiler-agent/pages/LearningPaths";
 import RoadMapList from "./roadmaps/pages/RoadMapList";
 import AiTutor from './ai-tutor/pages/AiTutor'
+import quizRoutes from './quiz-agent/routes'
+import QuizDashboardPage from './quiz-agent/pages/QuizDashboardPage'
 
 function FullScreenLoader() {
   return (
@@ -54,6 +56,7 @@ export default function App() {
               }>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ai-tutor" element={<AiTutor />} />
+              <Route path="/assessment" element={<QuizDashboardPage/>}/>
               <Route
                 path="/learning-paths"
                 element={
@@ -64,6 +67,9 @@ export default function App() {
               />
               <Route path="/roadmaps-list" element={<RoadMapList />} />
             </Route>
+                
+            {/* Quiz routes — owns its own Layout + ProtectedRoute wrapper */}
+            {quizRoutes()}
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

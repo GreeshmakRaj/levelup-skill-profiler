@@ -55,8 +55,9 @@ export default function QuizDashboardPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-
+  const { user, role } = useAuth()
   const api = useQuizApi()
+  console.log("user id ", user.id)
 
   useEffect(() => {
     let cancelled = false
@@ -65,8 +66,7 @@ export default function QuizDashboardPage() {
       setLoading(true)
       try {
         console.log('Fetching courses...')
-        // TODO: Replace hardcoded user ID with real mapping from Supabase user.id to employee/assessment ID
-        const courses = await api.getEligibilitySummary('02120dd4-9d27-4b79-8d4a-cbe52191a79a')
+        const courses = await api.getEligibilitySummary(user?.id)
         console.log('Courses loaded:', courses)
         if (!cancelled) {
           setAssessments(courses.map(toComponentShape))
@@ -93,7 +93,7 @@ export default function QuizDashboardPage() {
     setLoading(true)
     
     // TODO: Replace hardcoded user ID with real mapping from Supabase user.id to employee/assessment ID
-    api.getEligibilitySummary('02120dd4-9d27-4b79-8d4a-cbe52191a79a').then(courses => {
+    api.getEligibilitySummary(user?.id).then(courses => {
       setAssessments(courses.map(toComponentShape))
       setLoading(false)
     }).catch(err => {
@@ -170,7 +170,7 @@ export default function QuizDashboardPage() {
             <QuizCard
               key={course.course_id}
               course={course}
-              onStart={(c) => navigate(`/quiz/${c.course_id}`, { state: { course: c } })}
+              onStart={(c) => navigate(`/assessment/${c.course_id}`, { state: { course: c } })}
             />
           ))}
         </div>

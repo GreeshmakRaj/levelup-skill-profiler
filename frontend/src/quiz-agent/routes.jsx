@@ -12,10 +12,10 @@ import { ProtectedRoute } from '../skill-profiler-agent/routeGuards'
 export default function quizRoutes() {
   return (
     <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-      <Route path="/quiz" element={<QuizDashboardPage />} />
-      <Route path="/quiz/:quiz_id" element={<QuizPage />} />
-      <Route path="/quiz/:quiz_id/attempts" element={<AttemptHistoryPage />} />
-      <Route path="/quiz/:quiz_id/history" element={<AttemptHistoryPage />} />
+      <Route path="/assessment" element={<QuizDashboardPage />} />
+      <Route path="/assessment/:quiz_id" element={<QuizPage />} />
+      <Route path="/assessment/:quiz_id/attempts" element={<AttemptHistoryPage />} />
+      <Route path="/assessment/:quiz_id/history" element={<AttemptHistoryPage />} />
     </Route>
   )
 }

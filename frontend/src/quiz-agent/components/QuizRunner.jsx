@@ -116,7 +116,7 @@ const QuizRunner = memo(function QuizRunner({
                 topics: selectedTopics,
                 difficulty: assessmentInfo.difficulty
               }
-              console.log('Payload being sent:', payload)
+              
               startQuiz(payload)
             }}
             className="btn-primary mt-6 w-full"
