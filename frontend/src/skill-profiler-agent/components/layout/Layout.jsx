@@ -11,6 +11,8 @@ const COLLAPSE_KEY = 'skill-profiler-sidebar-collapsed'
 const ROUTE_LABELS = {
   dashboard: 'Dashboard',
   'learning-paths': 'Learning Paths',
+  'roadmaps-list': 'Roadmaps',
+  'ai-tutor': 'AI Tutor',
   quiz: 'Quiz',
 }
 
@@ -44,7 +46,8 @@ function Breadcrumb() {
 }
 
 export default function Layout() {
-  const { role } = useAuth()
+  const auth = useAuth()
+  const role = auth?.role ?? null
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
 
@@ -89,11 +92,12 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex h-[calc(100vh-3.5rem)]">
         {/* Sidebar – desktop */}
         <aside
-          className={`hidden md:flex flex-col shrink-0 border-r border-line bg-elevated min-h-[calc(100vh-3.5rem)] sticky top-14 transition-[width] duration-200 ease-in-out ${collapsed ? 'w-[68px]' : 'w-60'
-            }`}
+          className={`hidden md:flex flex-col shrink-0 border-r border-line bg-elevated transition-[width] duration-200 ease-in-out ${
+            collapsed ? 'w-[68px]' : 'w-60'
+          }`}
         >
           <Sidebar role={role} collapsed={collapsed} />
         </aside>
@@ -109,7 +113,7 @@ export default function Layout() {
         )}
 
         {/* Page content */}
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-6xl mx-auto w-full">
             <Outlet />
           </div>
