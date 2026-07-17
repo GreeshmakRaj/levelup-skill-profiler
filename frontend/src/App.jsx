@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { ToastProvider } from "./components/ui/Toast";
-import { ROLES } from "./constants/roles";
-import Layout from "./components/layout/Layout";
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import LearningPaths from "./pages/LearningPaths";
-import RoadMapList from "../roadmaps/pages/RoadMapList";
-import AiTutor from '../ai-tutor/pages/AiTutor'
+import { AuthProvider, useAuth } from "./skill-profiler-agent/hooks/useAuth";
+import { ToastProvider } from "./skill-profiler-agent/components/ui/Toast";
+import { ROLES } from "./skill-profiler-agent/constants/roles";
+import Layout from "./skill-profiler-agent/components/layout/Layout";
+import AuthPage from "./skill-profiler-agent/pages/AuthPage";
+import Dashboard from "./skill-profiler-agent/pages/Dashboard";
+import LearningPaths from "./skill-profiler-agent/pages/LearningPaths";
+import RoadMapList from "./roadmaps/pages/RoadMapList";
+import AiTutor from './ai-tutor/pages/AiTutor'
+import quizRoutes from './quiz-agent/routes'
+import QuizDashboardPage from './quiz-agent/pages/QuizDashboardPage'
 
 function FullScreenLoader() {
   return (
@@ -54,6 +56,7 @@ export default function App() {
               }>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ai-tutor" element={<AiTutor />} />
+              <Route path="/assessment" element={<QuizDashboardPage/>}/>
               <Route
                 path="/learning-paths"
                 element={
@@ -64,6 +67,9 @@ export default function App() {
               />
               <Route path="/roadmaps-list" element={<RoadMapList />} />
             </Route>
+                
+            {/* Quiz routes — owns its own Layout + ProtectedRoute wrapper */}
+            {quizRoutes()}
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

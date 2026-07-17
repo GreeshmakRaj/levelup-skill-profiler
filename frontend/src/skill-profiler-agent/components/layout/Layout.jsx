@@ -13,6 +13,7 @@ const ROUTE_LABELS = {
   'learning-paths': 'Learning Paths',
   'roadmaps-list': 'Roadmaps',
   'ai-tutor': 'AI Tutor',
+  quiz: 'Quiz',
 }
 
 function Brand({ compact = false }) {
