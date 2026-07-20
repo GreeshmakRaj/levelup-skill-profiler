@@ -8,6 +8,14 @@ const ICONS = {
   roadmaps: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />,
   tutor: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />,
   quiz: <ClipboardList className="w-5 h-5 shrink-0" strokeWidth={2} />,
+  analytics: (
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    d="M3.75 18.75h16.5M6.75 15.75v-4.5M10.5 15.75V8.25M14.25 15.75v-2.25M18 15.75V5.25M6.75 11.25l3.75-3 3.75 2.25L18 6.75"
+  />
+  ),
 };
 
 function navForRole(role) {
@@ -17,6 +25,7 @@ function navForRole(role) {
     items.push({ to: "/roadmaps-list", label: "Roadmaps", icon: "roadmaps" });
     items.push({ to: "/ai-tutor", label: "AI Tutor", icon: "tutor" });
     items.push({to: "/assessment", label: "Assessment", icon: "quiz"})
+    items.push({to: "/analytics", label: "Analytics", icon: "analytics"})
   }
   return items;
 }
