@@ -5,7 +5,11 @@ from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, s
 
 from app.core.auth import get_current_user, require_roles
 from app.core.constants import Role
-from app.schemas.skill import SkillDetailResponse
+from app.schemas.skill import (
+    EmployeeInfo,
+    EmployeeSkillAnalysisResponse,
+    SkillDetailResponse,
+)
 from app.services.llm import LLMError, get_provider_info
 from app.services.resume_parser import extract_text_from_resume
 from app.services.skill_analysis_service import run_full_analysis
@@ -16,6 +20,8 @@ router = APIRouter(prefix="/api/v1", tags=["Skills"])
 
 # Managers and Employees may run / manage assessments. Admins may not.
 require_assessor = require_roles(Role.MANAGER, Role.EMPLOYEE)
+# Managers and Admins may review their team's assessments.
+require_team_lead = require_roles(Role.ADMIN, Role.MANAGER)
 
 
 def _normalize_gaps(value) -> list[dict]:
@@ -148,6 +154,52 @@ async def analyze_skills(
 async def list_my_skills(user: dict = Depends(get_current_user)):
     rows = await db_service.list_skill_details(user["sub"])
     return [_to_response(r) for r in rows]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/v1/employees/skill-analysis  – team skill-gap data (Manager + Admin)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/employees/skill-analysis",
+    response_model=list[EmployeeSkillAnalysisResponse],
+    summary="List skill-gap analyses for all of the caller's employees",
+)
+async def list_employees_skills(user: dict = Depends(require_team_lead)):
+    """
+    Returns each of the caller's employees together with all their skill-gap
+    analyses. Admins see everyone in the org; Managers see their direct reports.
+    """
+    if user["role"] == Role.ADMIN:
+        employees = await db_service.list_users()
+    else:
+        employees = await db_service.list_users(reports_to=user["sub"])
+
+    # Never include the caller in their own team listing.
+    employees = [e for e in employees if e["user_id"] != user["sub"]]
+    if not employees:
+        return []
+
+    # One query for every employee's skill rows, then group by user_id.
+    employee_ids = [e["user_id"] for e in employees]
+    all_rows = await db_service.list_skill_details_for_users(employee_ids)
+    rows_by_user: dict[str, list[dict]] = {uid: [] for uid in employee_ids}
+    for row in all_rows:
+        rows_by_user.setdefault(row["user_id"], []).append(row)
+
+    return [
+        EmployeeSkillAnalysisResponse(
+            employee=EmployeeInfo(
+                userId=emp["user_id"],
+                username=emp.get("username"),
+                email=emp.get("gmail"),
+                role=Role(emp["user_role"]),
+                reportsTo=emp.get("reports_to"),
+            ),
+            skills=[_to_response(r) for r in rows_by_user.get(emp["user_id"], [])],
+        )
+        for emp in employees
+    ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

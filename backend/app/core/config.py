@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     seed_admin_email: str = ""
     seed_admin_password: str = ""
 
+    # System-to-system (S2S) API key for trusted backends (e.g. other teams)
+    # calling on behalf of an employee. Empty = the API-key auth path is
+    # disabled and only Supabase JWTs are accepted (no behaviour change).
+    service_api_key: str = ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]
