@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+from app.core.constants import Role
+
 
 # ── Skill gap shape ──────────────────────────────────────────────────────
 
@@ -26,4 +28,20 @@ class SkillDetailResponse(BaseModel):
     createdAt: datetime
     llmProvider: str | None = None
     llmModel: str | None = None
+
+
+# ── Employee skill-analysis (manager/admin team view) ────────────────────
+
+class EmployeeInfo(BaseModel):
+    userId: str
+    username: str | None = None
+    email: str | None = None
+    role: Role
+    reportsTo: str | None = None
+
+
+class EmployeeSkillAnalysisResponse(BaseModel):
+    """One employee together with all of their skill-gap analyses."""
+    employee: EmployeeInfo
+    skills: list[SkillDetailResponse]
 
