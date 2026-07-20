@@ -23,7 +23,7 @@ function fetchAnalyticsForView(view, profile) {
   }
 
   if (view === 'Executive') {
-    return getExecutiveAnalytics()
+    return getExecutiveAnalytics(profile.userId)
   }
 
   return getEmployeeAnalytics()
