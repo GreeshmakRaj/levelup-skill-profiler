@@ -10,6 +10,7 @@ import RoadMapList from "./roadmaps/pages/RoadMapList";
 import AiTutor from './ai-tutor/pages/AiTutor'
 import quizRoutes from './quiz-agent/routes'
 import QuizDashboardPage from './quiz-agent/pages/QuizDashboardPage'
+import Analytics from './analytics-dashboard/pages/Analytics'
 
 function FullScreenLoader() {
   return (
@@ -66,6 +67,7 @@ export default function App() {
                 }
               />
               <Route path="/roadmaps-list" element={<RoadMapList />} />
+              <Route path="/analytics" element={<Analytics/>} />
             </Route>
                 
             {/* Quiz routes — owns its own Layout + ProtectedRoute wrapper */}
