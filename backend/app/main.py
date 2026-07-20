@@ -38,13 +38,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS – allow the configured frontend origins. In development also allow any
-# localhost port, so Vite picking a fallback port (5174, 5175, …) doesn't break.
-_dev = settings.app_env != "production"
+# CORS – allow requests from any origin (any team/server). We use a regex
+# that matches everything instead of allow_origins=["*"], because browsers
+# reject a literal wildcard origin when allow_credentials=True; the regex
+# approach reflects back the actual request origin, which works with credentials.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"http://localhost:\d+" if _dev else None,
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
