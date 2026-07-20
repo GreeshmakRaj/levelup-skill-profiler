@@ -1,5 +1,59 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
+import { useToast } from '../ui/Toast'
+import { generateRoadmap, getEmployeeRoadmaps } from '../../../roadmaps/services/roadmapService'
+
 export default function SkillProfileCard({ profile }) {
   const isAligned = profile.roleAlignment === 'ALIGNED'
+  const [generating, setGenerating] = useState(false)
+  const [hasRoadmap, setHasRoadmap] = useState(false)
+  const [checkingRoadmap, setCheckingRoadmap] = useState(true)
+  const [availableWeeks, setAvailableWeeks] = useState('')
+  const navigate = useNavigate()
+  const auth = useAuth()
+  const toast = useToast()
+
+  // need to store the data in teh skill set profile.
+  useEffect(() => {
+    async function checkRoadmap() {
+      if (!profile.skillId || !auth?.user?.id) {
+        setCheckingRoadmap(false)
+        return
+      }
+      try {
+        const roadmaps = await getEmployeeRoadmaps(auth.user.id, profile.skillId)
+        setHasRoadmap(roadmaps.length > 0)
+      } catch {
+        setHasRoadmap(false)
+      } finally {
+        setCheckingRoadmap(false)
+      }
+    }
+    checkRoadmap()
+  }, [profile.skillId, auth?.user?.id])
+
+  const handleGenerateRoadmap = async () => {
+    if (!profile.skillId) {
+      toast.error('Skill ID not available')
+      return
+    }
+
+    setGenerating(true)
+    try {
+      const roadmap = await generateRoadmap(profile.skillId, availableWeeks || undefined)
+      toast.success('Roadmap generated successfully!')
+      navigate(`/roadmaps-list?skillid=${roadmap.skill_id}`)
+    } catch (err) {
+      toast.error(err.message || 'Failed to generate roadmap')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleViewRoadmap = () => {
+    navigate(`/roadmaps-list?skillid=${profile.skillId}`)
+  }
 
   const skillGaps = profile.skillGaps || []
   const hasGaps = skillGaps.length > 0
@@ -17,7 +71,64 @@ export default function SkillProfileCard({ profile }) {
     <div className="space-y-6">
       {/* Role summary */}
       <div className="card">
-        <h2 className="text-sm font-semibold text-faint uppercase tracking-wider mb-4">Role Analysis</h2>
+        <div className="flex items-start justify-between mb-4">
+          <h2 className="text-sm font-semibold text-faint uppercase tracking-wider">Role Analysis</h2>
+          <div className="flex items-center gap-2">
+          {!hasRoadmap && !checkingRoadmap && (
+            <select
+              value={availableWeeks}
+              onChange={e => setAvailableWeeks(e.target.value)}
+              disabled={generating}
+              title="How many weeks are you available?"
+              className="px-2 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-ink dark:bg-gray-800 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">Full plan (up to 12 wks)</option>
+              <option value="4">4 weeks</option>
+              <option value="6">6 weeks</option>
+              <option value="8">8 weeks</option>
+              <option value="10">10 weeks</option>
+            </select>
+          )}
+          <button
+            onClick={hasRoadmap ? handleViewRoadmap : handleGenerateRoadmap}
+            disabled={generating || checkingRoadmap}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {checkingRoadmap ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Checking...
+              </>
+            ) : generating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating...
+              </>
+            ) : hasRoadmap ? (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Roadmap
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                Generate Roadmap
+              </>
+            )}
+          </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-faint mb-1">Current Role</p>
