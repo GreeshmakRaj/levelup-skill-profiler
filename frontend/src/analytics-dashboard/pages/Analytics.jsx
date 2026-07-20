@@ -26,7 +26,7 @@ function fetchAnalyticsForView(view, profile) {
     return getExecutiveAnalytics(profile.userId)
   }
 
-  return getEmployeeAnalytics()
+  return getEmployeeAnalytics(profile.userId)
 }
 
 function PageHeader() {
