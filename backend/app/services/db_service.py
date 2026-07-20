@@ -158,6 +158,21 @@ async def get_latest_skill_detail(user_id: str) -> dict | None:
     return details[0] if details else None
 
 
+async def list_skill_details_for_users(user_ids: list[str]) -> list[dict]:
+    """All skill records for the given users in one query (most recent first)."""
+    if not user_ids:
+        return []
+    sb = await get_async_supabase()
+    result = await (
+        sb.table(SKILL_DETAILS_TABLE)
+        .select("*, users(username, gmail)")
+        .in_("user_id", user_ids)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return result.data or []
+
+
 async def get_skill_detail(skill_id: str) -> dict | None:
     sb = await get_async_supabase()
     result = await (
