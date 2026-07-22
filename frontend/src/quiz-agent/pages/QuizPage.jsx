@@ -96,7 +96,7 @@ export default function QuizPage() {
       <QuizRunner
         assessmentId={resolvedAssessmentId}
         assessmentInfo={assessmentInfo}
-        onBackToDashboard={() => navigate('/quiz')}
+        onBackToDashboard={() => navigate('/assessment')}
       />
     </div>
   )

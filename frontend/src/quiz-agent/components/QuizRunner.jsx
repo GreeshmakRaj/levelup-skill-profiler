@@ -75,14 +75,7 @@ const QuizRunner = memo(function QuizRunner({
 
     return (
       <div className="relative flex h-full items-center justify-center p-6">
-        <button
-          type="button"
-          onClick={onBackToDashboard}
-          className="absolute left-6 top-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back to Quiz Dashboard
-        </button>
+
         <div className="card w-full max-w-[480px]">
           <h1 className="text-xl font-extrabold tracking-tight text-ink">
             {courseName}
@@ -134,7 +127,15 @@ const QuizRunner = memo(function QuizRunner({
     const currentAnswer = activeQuestion ? answers[activeQuestion.question_id] : null
 
     return (
-      <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onBackToDashboard}
+          className="absolute -top-5 left-0 text-sm text-muted hover:text-ink hover:underline transition-colors opacity-50 hover:opacity-100 z-10"
+        >
+          ← Back to Dashboard
+        </button>
+        <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
         {/* Left: question card - takes remaining space */}
         <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
           <QuestionDisplay
@@ -159,6 +160,7 @@ const QuizRunner = memo(function QuizRunner({
           />
         </div>
       </div>
+    </div>
     )
   }
 
@@ -166,14 +168,7 @@ const QuizRunner = memo(function QuizRunner({
   if (phase === 'result') {
     return (
       <div className="relative py-6">
-        <button
-          type="button"
-          onClick={onBackToDashboard}
-          className="absolute left-0 top-0 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+
         <QuizResult
           result={result}
           reviewData={reviewData}

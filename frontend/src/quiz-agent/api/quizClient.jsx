@@ -2,11 +2,6 @@ import { supabase } from './../../skill-profiler-agent/services/supabase'
 
 const BASE_URL = import.meta.env.VITE_QUIZ_API_URL || 'http://172.16.20.97:8001'
 
-async function getToken() {
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token
-}
-
 function errorMessage(data, fallback) {
   return data?.message || data?.detail?.message || data?.detail || fallback
 }
@@ -23,15 +18,18 @@ async function handleSessionExpired() {
 }
 
 async function request(path, { method = 'GET', body } = {}) {
-  const token = await getToken()
-  if (!token) {
-    await handleSessionExpired()
-    throw new Error('Your session has expired. Please sign in again.')
-  }
+  const token = import.meta.env.VITE_ASSESSMENT_API_TOKEN
 
   const headers = {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
+  }
+
+  // Only add bearer token for this specific endpoint
+  if (path.includes('/assessment/results/employees/') && path.includes('/assessments')) {
+    if (!token) {
+      throw new Error('Assessment API token is not configured. Check your .env file.')
+    }
+    headers['Authorization'] = `Bearer ${token}`
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -41,8 +39,13 @@ async function request(path, { method = 'GET', body } = {}) {
   })
 
   if (res.status === 401) {
-    await handleSessionExpired()
-    throw new Error('Your session has expired. Please sign in again.')
+    const isAuthEndpoint = path.includes('/auth') || path.includes('/login') || path.includes('/session') || path.includes('/refresh')
+    if (isAuthEndpoint) {
+      await handleSessionExpired()
+      throw new Error('Your session has expired. Please sign in again.')
+    } else {
+      throw new Error('Unauthorized: ' + res.statusText)
+    }
   }
 
   if (res.status === 204) return null
@@ -59,10 +62,21 @@ export function useQuizApi() {
     },
 
     takeAssessment: async (payload) => {
-      return request('/assessment/take-assessment/', {
-        method: 'POST',
-        body: payload,
-      })
+      console.log('takeAssessment started at:', new Date().toISOString())
+      try {
+        const start = performance.now()
+        const result = await request('/assessment/take-assessment/', {
+          method: 'POST',
+          body: payload,
+        })
+        const end = performance.now()
+        console.log('takeAssessment completed in:', (end - start).toFixed(2), 'ms')
+        console.log('Response:', result)
+        return result
+      } catch (err) {
+        console.error('takeAssessment failed:', err.message)
+        throw err
+      }
     },
 
     submitAssessment: async (payload) => {
@@ -74,6 +88,14 @@ export function useQuizApi() {
 
     getReview: async (assessmentId) => {
       return request(`/assessment/submit-assessment/${assessmentId}/review`)
+    },
+
+    getAssessmentHistory: async (userId) => {
+      return request(`/assessment/assessments/${userId}/history`)
+    },
+
+    getDetailedResults: async (userId, limit = 20, offset = 0) => {
+      return request(`/assessment/results/employees/${userId}/assessments?limit=${limit}&offset=${offset}`)
     },
   }
 }
