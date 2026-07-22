@@ -92,12 +92,22 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="w-full bg-card p-6">
-      <QuizRunner
-        assessmentId={resolvedAssessmentId}
-        assessmentInfo={assessmentInfo}
-        onBackToDashboard={() => navigate('/quiz')}
-      />
+    <div className="w-full h-full flex flex-col bg-card">
+      <div className="px-6 pt-4 pb-2">
+        <button
+          onClick={() => navigate('/assessment')}
+          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+        >
+          ← Back to Quiz Dashboard
+        </button>
+      </div>
+      <div className="flex-1 p-6 pt-2">
+        <QuizRunner
+          assessmentId={resolvedAssessmentId}
+          assessmentInfo={assessmentInfo}
+          onBackToDashboard={() => navigate('/assessment')}
+        />
+      </div>
     </div>
   )
 }

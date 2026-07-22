@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useQuizApi } from '../api/quizClient'
 
 export default function useQuiz(assessmentId) {
@@ -10,6 +10,7 @@ export default function useQuiz(assessmentId) {
   const [answers, setAnswers] = useState({})
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const isSubmittingRef = useRef(false)
 
   // Adjust state during render when assessmentId changes
   const [prevId, setPrevId] = useState(assessmentId)
@@ -57,6 +58,7 @@ export default function useQuiz(assessmentId) {
       
       localStorage.setItem('quizSession', JSON.stringify({
         assessmentId: res.assessment_id,
+        courseId: payload.course_id,
         questions: normalizedQuestions,
         currentIndex: 0
       }))
@@ -108,8 +110,15 @@ export default function useQuiz(assessmentId) {
   }
 
   async function submitQuiz() {
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+
     setPhase('submitting')
     setError(null)
+
+    // Save current session and remove it immediately to prevent resuming during submission
+    const savedSession = localStorage.getItem('quizSession')
+    localStorage.removeItem('quizSession')
 
     // Answers are already stored as option keys (e.g., "a", "b").
     // We must wrap them in an array for the backend.
@@ -135,12 +144,19 @@ export default function useQuiz(assessmentId) {
       setResult(reviewRes)
       setPhase('result')
       
-      // Clear saved session after completion
-      localStorage.removeItem('quizSession')
+      // Clear saved answers after successful completion (quizSession already cleared)
       localStorage.removeItem('quizAnswers')
+
+
     } catch (err) {
+      // Restore session on failure so the user can retry
+      if (savedSession) {
+        localStorage.setItem('quizSession', savedSession)
+      }
       setError(err?.message || 'Failed to submit assessment. Please try again.')
       setPhase('active')
+    } finally {
+      isSubmittingRef.current = false
     }
   }
 
