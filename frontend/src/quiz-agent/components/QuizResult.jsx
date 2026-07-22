@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function QuizResult({
   result,
@@ -8,6 +9,7 @@ export default function QuizResult({
   onBackToDashboard,
 }) {
   const [showBreakdown, setShowBreakdown] = useState(false)
+  const navigate = useNavigate()
 
   if (!result) return null
 
@@ -29,13 +31,6 @@ export default function QuizResult({
 
   return (
     <div className="card mx-auto w-full max-w-[520px] !p-5 relative">
-      <button
-        type="button"
-        onClick={onBackToDashboard}
-        className="text-sm text-muted hover:text-ink hover:underline transition-colors opacity-50 hover:opacity-100 mb-4 inline-flex items-center"
-      >
-        ← Back to Dashboard
-      </button>
       {/* Top Section - Score Summary */}
       <div className="text-center">
         <div

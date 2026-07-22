@@ -77,12 +77,12 @@ export default function AssessmentHistoryModal({
                 {/* Top: Attempt # and Status badge */}
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-semibold text-ink">Attempt {idx + 1}</p>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                  <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
                     assessment.status === 'pass' || assessment.status === 'Pass'
-                      ? 'bg-green-900/30 text-green-400' 
+                      ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400' 
                       : assessment.status === 'pending' || assessment.status === 'Pending'
-                      ? 'bg-yellow-900/30 text-yellow-400'
-                      : 'bg-red-900/30 text-red-400'
+                      ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-red-200 text-red-900 dark:bg-red-900/30 dark:text-red-400'
                   }`}>
                     {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
                   </span>

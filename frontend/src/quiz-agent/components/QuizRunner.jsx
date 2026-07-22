@@ -4,8 +4,9 @@ import useQuiz from '../hooks/useQuiz'
 import QuestionDisplay from './QuestionDisplay'
 import QuestionsList from './QuestionsList'
 import QuizResult from './QuizResult'
-import { AlertCircle, ChevronLeft } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { SubtopicFilter } from './SubtopicFilter'
+import { useNavigate } from 'react-router-dom'
 
 const QuizRunner = memo(function QuizRunner({
   assessmentId,
@@ -13,6 +14,7 @@ const QuizRunner = memo(function QuizRunner({
   onBackToDashboard,
 }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const {
     phase,
     questions,
@@ -58,7 +60,7 @@ const QuizRunner = memo(function QuizRunner({
           <p className="mt-2 text-sm text-muted">{error}</p>
           <button
             type="button"
-            onClick={onBackToDashboard}
+            onClick={() => navigate('/assessment')}
             className="btn-primary mt-6"
           >
             Back to Dashboard
@@ -128,13 +130,6 @@ const QuizRunner = memo(function QuizRunner({
 
     return (
       <div className="relative">
-        <button
-          type="button"
-          onClick={onBackToDashboard}
-          className="absolute -top-5 left-0 text-sm text-muted hover:text-ink hover:underline transition-colors opacity-50 hover:opacity-100 z-10"
-        >
-          ← Back to Dashboard
-        </button>
         <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
         {/* Left: question card - takes remaining space */}
         <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
