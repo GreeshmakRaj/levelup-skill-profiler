@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuizApi } from '../api/quizClient'
+import AssessmentDetailedReviewModal from './AssessmentDetailedReviewModal'
 
 export default function AssessmentHistoryModal({ 
   courseId, 
@@ -10,6 +11,7 @@ export default function AssessmentHistoryModal({
   const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedAttemptId, setSelectedAttemptId] = useState(null)
 
   useEffect(() => {
     const fetchAssessments = async () => {
@@ -67,7 +69,11 @@ export default function AssessmentHistoryModal({
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
             {courseAssessments.map((assessment, idx) => (
-              <div key={assessment.assessment_id} className="border border-line rounded-lg p-3 mb-2">
+              <div 
+                key={assessment.assessment_id} 
+                onClick={() => setSelectedAttemptId(assessment.assessment_id)}
+                className="border border-line rounded-lg p-3 mb-2 cursor-pointer hover:bg-surface/50 transition-colors"
+              >
                 {/* Top: Attempt # and Status badge */}
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-semibold text-ink">Attempt {idx + 1}</p>
@@ -95,6 +101,13 @@ export default function AssessmentHistoryModal({
           </div>
         )}
       </div>
+
+      {selectedAttemptId && (
+        <AssessmentDetailedReviewModal
+          assessmentId={selectedAttemptId}
+          onClose={() => setSelectedAttemptId(null)}
+        />
+      )}
     </div>
   )
 }
