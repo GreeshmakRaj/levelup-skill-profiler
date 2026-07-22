@@ -23,10 +23,10 @@ function fetchAnalyticsForView(view, profile) {
   }
 
   if (view === 'Executive') {
-    return getExecutiveAnalytics(profile.userId)
+    return getExecutiveAnalytics()
   }
 
-  return getEmployeeAnalytics()
+  return getEmployeeAnalytics(profile.userId)
 }
 
 function PageHeader() {
