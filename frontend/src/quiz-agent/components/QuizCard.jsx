@@ -46,16 +46,16 @@ export default function QuizCard({ course, history, activeSession, onStart, onVi
   const hasData = attempts > 0 || hasScore || displayStatus
 
   return (
-    <article className="card flex h-auto w-full max-w-[240px] flex-col justify-between !rounded-[8px] !p-4">
+    <article className="card flex h-auto w-full max-w-[240px] flex-col justify-between !rounded-[8px] !p-5">
       <div>
         <div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-bold text-ink" title={course?.course_name}>
+            <h2 className="truncate text-sm font-bold text-ink pr-6" title={course?.course_name}>
               {course?.course_name || 'Untitled Assessment'}
             </h2>
 
             {/* History summary - always reserve space */}
-            <div className="mt-1 h-4 text-[11px] text-muted">
+            <div className="mt-4 h-5 text-xs text-muted">
               {history ? (
                 <>
                   Attempts: <span className="text-ink font-semibold">{history.attempts}</span> | Last Score: <span className="text-ink font-semibold">{history.last_score !== null ? history.last_score : '—'}/{course?.question_count || 10}</span>
@@ -68,7 +68,7 @@ export default function QuizCard({ course, history, activeSession, onStart, onVi
         </div>
       </div>
 
-      <div className="mt-3 flex gap-1">
+      <div className="mt-5 flex gap-3">
         <button
           type="button"
           onClick={() => {
