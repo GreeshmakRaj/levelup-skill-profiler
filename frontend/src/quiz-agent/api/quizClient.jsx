@@ -17,7 +17,7 @@ async function handleSessionExpired() {
   }
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+async function request(path, { method = 'GET', body, signal } = {}) {
   const token = import.meta.env.VITE_ASSESSMENT_API_TOKEN
 
   const headers = {
@@ -25,9 +25,14 @@ async function request(path, { method = 'GET', body } = {}) {
   }
 
   // Only add bearer token for this specific endpoint
-  if (path.includes('/assessment/results/employees/') && path.includes('/assessments')) {
+  if (
+    path.includes('/assessment/results/employees/') &&
+    path.includes('/assessments')
+  ) {
     if (!token) {
-      throw new Error('Assessment API token is not configured. Check your .env file.')
+      throw new Error(
+        'Assessment API token is not configured. Check your .env file.'
+      )
     }
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -36,10 +41,16 @@ async function request(path, { method = 'GET', body } = {}) {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   })
 
   if (res.status === 401) {
-    const isAuthEndpoint = path.includes('/auth') || path.includes('/login') || path.includes('/session') || path.includes('/refresh')
+    const isAuthEndpoint =
+      path.includes('/auth') ||
+      path.includes('/login') ||
+      path.includes('/session') ||
+      path.includes('/refresh')
+
     if (isAuthEndpoint) {
       await handleSessionExpired()
       throw new Error('Your session has expired. Please sign in again.')
@@ -49,8 +60,11 @@ async function request(path, { method = 'GET', body } = {}) {
   }
 
   if (res.status === 204) return null
+
   const data = await res.json().catch(() => ({}))
+
   if (!res.ok) throw new Error(errorMessage(data, 'Request failed'))
+
   return data
 }
 
@@ -60,14 +74,15 @@ export function useQuizApi() {
       const data = await request(`/assessment/eligibility/${employeeId}/summary`)
       return data.courses  // Extract courses from wrapper
     },
-
-    takeAssessment: async (payload) => {
+    //  how to use abort controler 
+    takeAssessment: async (payload, signal) => {
       console.log('takeAssessment started at:', new Date().toISOString())
       try {
         const start = performance.now()
         const result = await request('/assessment/take-assessment/', {
           method: 'POST',
           body: payload,
+          signal,
         })
         const end = performance.now()
         console.log('takeAssessment completed in:', (end - start).toFixed(2), 'ms')

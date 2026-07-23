@@ -83,7 +83,7 @@ export default function QuizCard({ course, history, activeSession, onStart, onVi
             }`}
         >
           <Play className="w-4 h-4" />
-          <span>{isActiveCourse ? 'Resume' : isDisabled ? 'In Progress' : 'Start'}</span>
+          <span>{isActiveCourse ? 'Resume' : 'Start'}</span>
         </button>
         <button
           type="button"

@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useQuizApi } from '../api/quizClient'
 import AssessmentDetailedReviewModal from './AssessmentDetailedReviewModal'
 
-export default function AssessmentHistoryModal({ 
-  courseId, 
-  courseName, 
+export default function AssessmentHistoryModal({
+  courseId,
+  courseName,
   userId,
-  onClose 
+  onClose
 }) {
   const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -28,7 +28,7 @@ export default function AssessmentHistoryModal({
         setLoading(false)
       }
     }
-    
+
     if (userId && courseId) {
       fetchAssessments()
     }
@@ -69,28 +69,27 @@ export default function AssessmentHistoryModal({
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
             {courseAssessments.map((assessment, idx) => (
-              <div 
-                key={assessment.assessment_id} 
+              <div
+                key={assessment.assessment_id}
                 onClick={() => setSelectedAttemptId(assessment.assessment_id)}
                 className="border border-line rounded-lg p-3 mb-2 cursor-pointer hover:bg-surface/50 transition-colors"
               >
                 {/* Top: Attempt # and Status badge */}
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-semibold text-ink">Attempt {idx + 1}</p>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
-                    assessment.status === 'pass' || assessment.status === 'Pass'
-                      ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400' 
+                  <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${assessment.status === 'pass' || assessment.status === 'Pass'
+                      ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400'
                       : assessment.status === 'pending' || assessment.status === 'Pending'
-                      ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : 'bg-red-200 text-red-900 dark:bg-red-900/30 dark:text-red-400'
-                  }`}>
+                        ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-red-200 text-red-900 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
                     {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
                   </span>
                 </div>
-                
+
                 {/* Assessment ID */}
                 <p className="text-xs text-muted mb-2">Assessment ID: {assessment.assessment_id}</p>
-                
+
                 {/* Score and Threshold - SAME LINE */}
                 <div className="text-xs text-muted grid grid-cols-2 gap-4">
                   <div>Score: <span className="text-ink font-semibold">{assessment.last_score !== null && assessment.last_score !== undefined ? assessment.last_score : '—'}</span></div>
