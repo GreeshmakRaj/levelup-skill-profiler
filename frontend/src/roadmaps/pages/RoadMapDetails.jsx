@@ -16,18 +16,12 @@ export default function RoadMapDetails() {
   const user = auth?.user ?? null;
 
   const [roadmap, setRoadmap] = useState(null);
-  const [expandedWeeks, setExpandedWeeks] = useState(new Set([1]));
+  const [expandedWeek, setExpandedWeek] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const toggleWeek = (weekNumber) => {
-    const newExpanded = new Set(expandedWeeks);
-    if (newExpanded.has(weekNumber)) {
-      newExpanded.delete(weekNumber);
-    } else {
-      newExpanded.add(weekNumber);
-    }
-    setExpandedWeeks(newExpanded);
+    setExpandedWeek((prev) => (prev === weekNumber ? null : weekNumber));
   };
 
   useEffect(() => {
@@ -100,27 +94,29 @@ export default function RoadMapDetails() {
       <ProgressHeader roadmap={roadmap} />
 
       {/* Accordion-style Weeks Display */}
-      <div className="space-y-3 sticky top-6">
+      <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Weekly Plan</h3>
-        <div className="max-h-[600px] overflow-y-auto pr-2">
-          {roadmap.plan.weeks.map((week, index) => (
-            <div key={week.week} className={`border-2 border-line rounded-lg bg-white dark:bg-surface ${index > 0 ? "mt-2" : ""}`}>
+        <div className="space-y-2">
+          {roadmap.plan.weeks.map((week) => (
+            <div key={week.week} className="border-2 border-line rounded-lg bg-white dark:bg-surface">
               <button onClick={() => toggleWeek(week.week)} className="w-full flex items-center justify-between p-4 text-left hover:bg-surface transition-colors rounded-lg">
                 <div>
                   <h4 className="font-bold text-ink text-sm">
                     Week {week.week}: <span className="font-normal">{week.focus}</span>
                   </h4>
                 </div>
-                <svg className={`w-5 h-5 text-muted transition-transform shrink-0 ${expandedWeeks.has(week.week) ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`w-5 h-5 text-muted transition-transform shrink-0 ${expandedWeek === week.week ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
-              {expandedWeeks.has(week.week) && (
-                <div className="p-4 pt-0 border-t-2 border-line">
-                  <WeekCard week={week} />
+              <div className={`grid transition-all duration-300 ease-in-out ${expandedWeek === week.week ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                <div className="overflow-hidden">
+                  <div className="p-4 pt-0 border-t-2 border-line">
+                    <WeekCard week={week} />
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
