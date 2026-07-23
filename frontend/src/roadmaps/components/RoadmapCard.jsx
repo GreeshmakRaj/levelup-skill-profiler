@@ -17,7 +17,7 @@ export default function RoadmapCard({ roadmap }) {
   };
 
   return (
-    <div className="card p-5 hover:border-brand-300 transition-colors">
+    <div className="card p-5 hover:border-brand-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <p className="text-xs text-faint">Target Role</p>
