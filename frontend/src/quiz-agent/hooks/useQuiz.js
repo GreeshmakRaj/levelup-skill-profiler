@@ -25,14 +25,14 @@ export default function useQuiz(assessmentId) {
 
     const savedSession = localStorage.getItem('quizSession')
     const savedAnswers = localStorage.getItem('quizAnswers')
-    
+
     if (savedSession) {
       const session = JSON.parse(savedSession)
       setCurrentAttemptId(session.assessmentId)
       setQuestions(session.questions)
       setCurrentIndex(session.currentIndex || 0)
       setPhase('active')
-      
+
       if (savedAnswers) {
         setAnswers(JSON.parse(savedAnswers))
       }
@@ -41,12 +41,28 @@ export default function useQuiz(assessmentId) {
     }
   }, [assessmentId])
 
+  const abortControllerRef = useRef(null)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
   async function startQuiz(payload) {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
     setPhase('loading')
     setError(null)
-    
+
     try {
-      const res = await api.takeAssessment(payload)
+      const res = await api.takeAssessment(payload, abortControllerRef.current.signal)
       const normalizedQuestions = (res.questions || []).map(q => ({
         ...q,
         question_id: q.id // Normalize for frontend
@@ -55,7 +71,7 @@ export default function useQuiz(assessmentId) {
       setQuestions(normalizedQuestions)
       setCurrentIndex(0)
       setPhase('active')
-      
+
       localStorage.setItem('quizSession', JSON.stringify({
         assessmentId: res.assessment_id,
         courseId: payload.course_id,
@@ -63,6 +79,10 @@ export default function useQuiz(assessmentId) {
         currentIndex: 0
       }))
     } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Previous request was cancelled')
+        return
+      }
       setError(err?.message || 'Failed to start assessment.')
       setPhase('intro')
     }
@@ -143,7 +163,7 @@ export default function useQuiz(assessmentId) {
       const reviewRes = await api.getReview(currentAttemptId)
       setResult(reviewRes)
       setPhase('result')
-      
+
       // Clear saved answers after successful completion (quizSession already cleared)
       localStorage.removeItem('quizAnswers')
 

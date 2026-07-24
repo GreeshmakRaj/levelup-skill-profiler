@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useQuizApi } from '../api/quizClient'
 import AssessmentDetailedReviewModal from './AssessmentDetailedReviewModal'
 
-export default function AssessmentHistoryModal({ 
-  courseId, 
-  courseName, 
+export default function AssessmentHistoryModal({
+  courseId,
+  courseName,
   userId,
-  onClose 
+  onClose
 }) {
   const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -14,12 +14,19 @@ export default function AssessmentHistoryModal({
   const [selectedAttemptId, setSelectedAttemptId] = useState(null)
 
   useEffect(() => {
+    console.log('Modal received userId:', userId, 'courseId:', courseId)
     const fetchAssessments = async () => {
       try {
         setLoading(true)
         const api = useQuizApi()
         const res = await api.getDetailedResults(userId)
-        setAssessments(res.assessments || [])
+        console.log('Raw API response:', res)
+        
+        // New API returns { attempts: [...], pagination: {...} }
+        const attemptsList = res.attempts || []
+        
+        console.log('Fetched attempts:', attemptsList)
+        setAssessments(attemptsList)
         setError(null)
       } catch (err) {
         console.error('Failed to fetch assessments:', err)
@@ -28,7 +35,7 @@ export default function AssessmentHistoryModal({
         setLoading(false)
       }
     }
-    
+
     if (userId && courseId) {
       fetchAssessments()
     }
@@ -39,6 +46,9 @@ export default function AssessmentHistoryModal({
   // Filter for the selected course
   const courseAssessments = assessments
     .filter(a => a.course_id === courseId)
+
+  console.log('All assessments:', assessments)
+  console.log('Filtered for course:', courseId, courseAssessments)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -76,11 +86,11 @@ export default function AssessmentHistoryModal({
               >
                 {/* Top: Attempt # and Status badge */}
                 <div className="flex justify-between items-center mb-2">
-                  <p className="text-sm font-semibold text-ink">Attempt {idx + 1}</p>
+                  <p className="text-sm font-semibold text-ink">Attempt {courseAssessments.length - idx}</p>
                   <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
-                    assessment.status === 'pass' || assessment.status === 'Pass'
+                    assessment.status === 'pass' 
                       ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400' 
-                      : assessment.status === 'pending' || assessment.status === 'Pending'
+                      : assessment.status === 'pending'
                       ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
                       : 'bg-red-200 text-red-900 dark:bg-red-900/30 dark:text-red-400'
                   }`}>
@@ -91,10 +101,10 @@ export default function AssessmentHistoryModal({
                 {/* Assessment ID */}
                 <p className="text-xs text-muted mb-2">Assessment ID: {assessment.assessment_id}</p>
                 
-                {/* Score and Threshold - SAME LINE */}
-                <div className="text-xs text-muted grid grid-cols-2 gap-4">
-                  <div>Score: <span className="text-ink font-semibold">{assessment.last_score !== null && assessment.last_score !== undefined ? assessment.last_score : '—'}</span></div>
-                  <div>Threshold: <span className="text-ink font-semibold">{assessment.pass_threshold}</span></div>
+                {/* Score - Use 'score' instead of 'last_score' */}
+                <div className="text-xs text-muted flex justify-between">
+                  <div>Score: <span className="text-ink font-semibold">{assessment.score !== null ? assessment.score : '—'}</span></div>
+                  <div>Attempted: <span className="text-ink font-semibold">{assessment.attempted_on ? new Date(assessment.attempted_on).toLocaleDateString() : '—'}</span></div>
                 </div>
               </div>
             ))}
