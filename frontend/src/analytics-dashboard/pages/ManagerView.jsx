@@ -10,17 +10,18 @@ export default function ManagerView({ data }) {
   }))
   const memberItems = data.teamMembers.map((member) => ({
     title: member.name,
-    badge: `${member.skillScore} score`,
-    description: `Learning progress ${member.learningProgress}%`,
+    badge: `${(member.skillScore || 0) * 10} score`,
+    description: `Learning progress ${member.learningProgress || 0}%`,
   }))
 
   return (
     <div className="space-y-4">
       <div className="grid lg:grid-cols-2 gap-4">
-        <ChartCard title="Team progress" subtitle={`Managed by ${data.profile.name}`}>
-          <BarChart data={data.progress} />
+        
+        <ChartCard title="Team members" subtitle={`Top performer: ${data.analytics.topPerformer}`}>
+          <DetailList items={memberItems} />
         </ChartCard>
-        <ChartCard title="Team skill distribution" subtitle="Employees by skill">
+        <ChartCard title="Team skill distribution" subtitle="Skill divided as departments">
           <DonutChart data={data.distribution} />
         </ChartCard>
       </div>
@@ -28,9 +29,9 @@ export default function ManagerView({ data }) {
         <ChartCard title="Open skill gaps" subtitle={`Training completion ${data.analytics.trainingCompletionRate}%`}>
           <DetailList items={gapItems} />
         </ChartCard>
-        <ChartCard title="Team members" subtitle={`Top performer: ${data.analytics.topPerformer}`}>
-          <DetailList items={memberItems} />
-        </ChartCard>
+        {/* <ChartCard title="Team progress" subtitle={`Managed by ${data.profile.name}`}>
+          <BarChart data={data.progress} />
+        </ChartCard> */}
       </div>
     </div>
   )
