@@ -10,11 +10,10 @@ import EmployeeView from './EmployeeView'
 import ManagerView from './ManagerView'
 import ExecutiveView from './ExecutiveView'
 
-const ANALYTICS_VIEWS = ['Employee', 'Manager', 'Executive']
 const ROLE_VIEWS = {
   EMPLOYEE: ['Employee'],
-  MANAGER: ['Employee', 'Manager'],
-  ADMIN: ['Employee', 'Manager', 'Executive'],
+  MANAGER: ['Manager'],
+  // ADMIN: ['Employee', 'Manager', 'Executive'],
 }
 
 function fetchAnalyticsForView(view, profile) {
@@ -41,27 +40,20 @@ function PageHeader() {
 function Tabs({ active, onChange, allowedViews = [] }) {
   return (
     <div className="inline-flex rounded-xl bg-elevated border border-line p-1 shadow-sm">
-      {ANALYTICS_VIEWS.map((view) => {
-        const enabled = allowedViews.includes(view)
-
-        return (
-          <button
-            key={view}
-            type="button"
-            disabled={!enabled}
-            onClick={() => enabled && onChange(view)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              active === view
-                ? 'bg-brand-500 text-white shadow-sm'
-                : enabled
-                ? 'text-muted hover:text-ink hover:bg-surface'
-                : 'text-gray-400 cursor-not-allowed opacity-50'
-            }`}
-          >
-            {view}
-          </button>
-        )
-      })}
+      {allowedViews.map((view) => (
+        <button
+          key={view}
+          type="button"
+          onClick={() => onChange(view)}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            active === view
+              ? 'bg-brand-500 text-white shadow-sm'
+              : 'text-muted hover:text-ink hover:bg-surface'
+          }`}
+        >
+          {view}
+        </button>
+      ))}
     </div>
   )
 }
@@ -157,7 +149,7 @@ export default function Analytics() {
 
           {activeView === 'Employee' && <EmployeeView data={data} />}
           {activeView === 'Manager' && <ManagerView data={data} />}
-          {activeView === 'Executive' && <ExecutiveView data={data} />}
+          {/* {activeView === 'Executive' && <ExecutiveView data={data} />} */}
         </>
       )}
     </div>

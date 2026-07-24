@@ -25,8 +25,8 @@ function employeeViewModel(response) {
     ...data,
     profile: data.employee,
     stats: [
-      { label: 'Current Skill Score', value: String(data.summary.currentSkillScore) },
-      { label: 'Learning Progress', value: `${data.summary.learningProgress}%` },
+      { label: 'Current Skill Score ', value: `${String(data.summary.currentSkillScore) * 10} / 100` },
+      // { label: 'Learning Progress', value: `${data.summary.learningProgress}%` },
       { label: 'Quiz Average', value: `${data.summary.quizAverage}%` },
       { label: 'Certificates', value: String(data.summary.certificationsEarned) },
     ],
@@ -35,6 +35,10 @@ function employeeViewModel(response) {
     skillDistribution: data.charts.skillDistribution.map((item) => ({
       name: item.skill,
       value: item.score,
+    })),
+    skillGaps: data.charts.skillGaps.map((item) => ({
+      name: item.skill,
+      value: item.requiredLevel,
     })),
     roadmap: data.roadmap ?? null,
     recommendations: data.course_recommendations ?? [],
@@ -48,7 +52,7 @@ function managerViewModel(response) {
     profile: data.manager,
     stats: [
       { label: 'Team Size', value: String(data.summary.teamSize) },
-      { label: 'Avg Skill Score', value: String(data.summary.averageSkillScore) },
+      { label: 'Avg Skill Score', value: `${String(data.summary.averageSkillScore) * 10} / 100` },
       { label: 'Avg Progress', value: `${data.summary.averageLearningProgress}%` },
       { label: 'Pending Trainings', value: String(data.summary.pendingTrainings), negative: true },
     ],
@@ -59,7 +63,7 @@ function managerViewModel(response) {
     })),
     progress: data.teamMembers.map((member) => ({
       name: member.name,
-      value: member.learningProgress,
+      value: member.learningProgress || 0,
     })),
   }
 }
