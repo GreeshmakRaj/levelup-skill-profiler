@@ -14,6 +14,7 @@ export default function QuestionDisplay({
 }) {
   const [showHint, setShowHint] = useState(false)
   const [localAnswer, setLocalAnswer] = useState(currentAnswer)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     setLocalAnswer(currentAnswer)
@@ -48,9 +49,19 @@ export default function QuestionDisplay({
     }
   }
 
-  const handleNext = () => {
-    onAnswer(question_id, localAnswer)
-    onNext()
+  const handleNext = async () => {
+    if (currentIndex === totalQuestions - 1) {
+      if (isSubmitting) return
+      setIsSubmitting(true)
+      onAnswer(question_id, localAnswer)
+      await onNext()
+      // Note: we don't necessarily need setIsSubmitting(false) here because the component
+      // unmounts when the phase changes to 'submitting', but we do it to be safe.
+      setIsSubmitting(false)
+    } else {
+      onAnswer(question_id, localAnswer)
+      onNext()
+    }
   }
 
   const handlePrev = () => {
@@ -202,9 +213,10 @@ export default function QuestionDisplay({
           <button
             type="button"
             onClick={handleNext}
-            className="btn-primary !py-1.5 !px-3 !text-sm"
+            disabled={isSubmitting}
+            className={`btn-primary !py-1.5 !px-3 !text-sm ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Submit Assessment
+            {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
           </button>
         ) : (
           <button
