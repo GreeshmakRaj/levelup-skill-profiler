@@ -5,19 +5,19 @@ import DetailList from '../components/DetailList'
 
 export default function EmployeeView({ data }) {
   const recommendationItems = data.recommendations.map((item) => ({
-    title: item.course,
-    badge: item.priority,
-    description: item.reason,
+    title: item.course_name,
+    badge: item.provider,
+    // description: item.url,
   }))
 
   return (
     <div className="space-y-4">
       <div className="grid lg:grid-cols-2 gap-4">
-        <ChartCard title="Skill score trend" subtitle={`${data.profile.name} | ${data.profile.designation}`}>
-          <LineChart series={data.trend} labels={data.trendLabels} />
-        </ChartCard>
-        <ChartCard title="Skill distribution" subtitle="Current skill scores">
+        <ChartCard title="Skill distribution (Top 5)" subtitle="Current skill scores">
           <BarChart data={data.skillDistribution} />
+        </ChartCard>
+        <ChartCard title="Skill Gap distribution" subtitle="Required Skill Levels">
+          <BarChart data={data.skillGaps} />
         </ChartCard>
       </div>
       <div className="grid lg:grid-cols-2 gap-4">
@@ -62,3 +62,4 @@ export default function EmployeeView({ data }) {
     </div>
   )
 }
+ 
