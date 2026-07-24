@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { mockAssessments } from '../mockData'
+import { useAuth } from '../../skill-profiler-agent/hooks/useAuth'
+import { useQuizApi } from '../api/quizClient'
 import AttemptHistory from '../components/AttemptHistory'
 import { ChevronLeft } from 'lucide-react'
 
@@ -23,6 +24,8 @@ function toComponentShape(a) {
 export default function AttemptHistoryPage() {
   const { quiz_id: assessment_id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const api = useQuizApi()
 
   const [history, setHistory] = useState([])
   const [assessmentMeta, setAssessmentMeta] = useState(null)
@@ -33,11 +36,14 @@ export default function AttemptHistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      // TEMP DEMO: no real history endpoint — use empty history + mock meta
-      const allAssessments = mockAssessments.map(toComponentShape)
-      const meta = allAssessments.find((a) => a.assessment_id === assessment_id)
+      const courses = await api.getEligibilitySummary(user?.id)
+      const allAssessments = courses.map(toComponentShape)
+      const meta = allAssessments.find((a) => a.assessment_id === assessment_id || a.course_id === assessment_id)
+      
+      const detailed = await api.getDetailedResults(user?.id)
+      const courseHistory = detailed?.assessments?.filter(a => a.course_id === assessment_id) || []
 
-      setHistory([]) // No attempt history in demo mode
+      setHistory(courseHistory)
       setAssessmentMeta(meta || null)
     } catch (err) {
       setError(err.message || 'An error occurred while fetching data')
@@ -92,7 +98,7 @@ export default function AttemptHistoryPage() {
     const sortedHistory = [...history].sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
     const latestAttempt = sortedHistory[0]
 
-    latestStatusStr = latestAttempt.pass_fail_status || '—'
+    latestStatusStr = latestAttempt.status || '—'
   }
 
   const visibleTopics = assessmentMeta.topics ? assessmentMeta.topics.slice(0, 2) : []
@@ -100,13 +106,7 @@ export default function AttemptHistoryPage() {
 
   return (
     <div className="w-full bg-card p-6">
-      <Link
-        to="/quiz"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 hover:underline"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back to Quiz Dashboard
-      </Link>
+
 
       {/* Section 1 */}
       <div className="mb-8">
@@ -168,7 +168,7 @@ export default function AttemptHistoryPage() {
             <p className="mb-4 text-sm text-muted">No attempts yet. Start this assessment from your dashboard.</p>
             <button
               type="button"
-              onClick={() => navigate('/quiz')}
+              onClick={() => navigate('/assessment')}
               className="btn-primary"
             >
               Go to Dashboard
