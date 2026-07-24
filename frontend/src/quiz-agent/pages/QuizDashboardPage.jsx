@@ -114,11 +114,30 @@ export default function QuizDashboardPage() {
       try {
         const historyRes = await api.getAssessmentHistory(user?.id)
         
-        // Create a map of course_id -> history data for quick lookup
+        // Create a map of course_id -> aggregated history
         const historyMap = {}
         if (historyRes?.assessments) {
           historyRes.assessments.forEach(item => {
-            historyMap[item.course_id] = item
+            if (!historyMap[item.course_id]) {
+              // First entry for this course — initialize
+              historyMap[item.course_id] = {
+                course_id: item.course_id,
+                attempts: 0,
+                last_score: null,
+                statuses: []
+              }
+            }
+            
+            // Add attempts count
+            historyMap[item.course_id].attempts += item.attempts
+            
+            // Capture the latest (first) score with a value
+            if (item.last_score !== null && historyMap[item.course_id].last_score === null) {
+              historyMap[item.course_id].last_score = item.last_score
+            }
+            
+            // Track all statuses
+            historyMap[item.course_id].statuses.push(item.status)
           })
         }
         setCourseHistory(historyMap)

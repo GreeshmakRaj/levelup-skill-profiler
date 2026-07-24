@@ -27,7 +27,7 @@ async function request(path, { method = 'GET', body, signal } = {}) {
   // Only add bearer token for this specific endpoint
   if (
     path.includes('/assessment/results/employees/') &&
-    path.includes('/assessments')
+    (path.includes('/assessments') || path.includes('/assessment-attempts'))
   ) {
     if (!token) {
       throw new Error(
@@ -110,7 +110,7 @@ export function useQuizApi() {
     },
 
     getDetailedResults: async (userId, limit = 20, offset = 0) => {
-      return request(`/assessment/results/employees/${userId}/assessments?limit=${limit}&offset=${offset}`)
+      return request(`/assessment/results/employees/${userId}/assessment-attempts?limit=${limit}&offset=${offset}`)
     },
   }
 }
