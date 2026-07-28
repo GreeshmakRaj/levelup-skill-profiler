@@ -82,9 +82,7 @@ const QuizRunner = memo(function QuizRunner({
           <h1 className="text-xl font-extrabold tracking-tight text-ink">
             {courseName}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            {/* {moduleName ? `${moduleName}` : '—'} */}
-          </p>
+
 
           <div className="mt-6 border-y border-line py-3">
             <SubtopicFilter
@@ -111,7 +109,7 @@ const QuizRunner = memo(function QuizRunner({
                 topics: selectedTopics,
                 difficulty: assessmentInfo.difficulty
               }
-              
+
               startQuiz(payload)
             }}
             className="btn-primary mt-6 w-full"
@@ -131,31 +129,31 @@ const QuizRunner = memo(function QuizRunner({
     return (
       <div className="relative">
         <div className="flex gap-5 py-4 h-[calc(100vh-160px)]">
-        {/* Left: question card - takes remaining space */}
-        <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
-          <QuestionDisplay
-            key={activeQuestion?.question_id}
-            question={activeQuestion}
-            currentIndex={currentIndex}
-            totalQuestions={questions.length}
-            currentAnswer={currentAnswer}
-            onAnswer={answerQuestion}
-            onNext={nextQuestion}
-            onPrev={prevQuestion}
-          />
-        </div>
+          {/* Left: question card - takes remaining space */}
+          <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2">
+            <QuestionDisplay
+              key={activeQuestion?.question_id}
+              question={activeQuestion}
+              currentIndex={currentIndex}
+              totalQuestions={questions.length}
+              currentAnswer={currentAnswer}
+              onAnswer={answerQuestion}
+              onNext={nextQuestion}
+              onPrev={prevQuestion}
+            />
+          </div>
 
-        {/* Right: questions list panel - fixed width */}
-        <div className="w-52 shrink-0 h-full overflow-hidden">
-          <QuestionsList
-            questions={questions}
-            answers={answers}
-            currentIndex={currentIndex}
-            onSelect={(idx) => setCurrentIndex(idx)}
-          />
+          {/* Right: questions list panel - fixed width */}
+          <div className="w-52 shrink-0 h-full overflow-hidden">
+            <QuestionsList
+              questions={questions}
+              answers={answers}
+              currentIndex={currentIndex}
+              onSelect={(idx) => setCurrentIndex(idx)}
+            />
+          </div>
         </div>
       </div>
-    </div>
     )
   }
 
