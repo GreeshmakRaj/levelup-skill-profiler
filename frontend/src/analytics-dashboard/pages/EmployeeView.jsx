@@ -7,7 +7,7 @@ export default function EmployeeView({ data }) {
   const recommendationItems = data.recommendations.map((item) => ({
     title: item.course_name,
     badge: item.provider,
-    // description: item.url,
+    url: item.description,
   }))
 
   return (
