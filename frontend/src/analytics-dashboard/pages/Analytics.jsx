@@ -9,10 +9,11 @@ import StatCard from '../components/StatCard'
 import EmployeeView from './EmployeeView'
 import ManagerView from './ManagerView'
 import ExecutiveView from './ExecutiveView'
+import InsightsPanel from '../components/Insights'
 
 const ROLE_VIEWS = {
   EMPLOYEE: ['Employee'],
-  MANAGER: ['Manager'],
+  MANAGER: ['Employee', 'Manager'],
   // ADMIN: ['Employee', 'Manager', 'Executive'],
 }
 
@@ -60,11 +61,13 @@ function Tabs({ active, onChange, allowedViews = [] }) {
 
 export default function Analytics() {
   const { profile, role } = useAuth()
-  const [activeView, setActiveView] = useState('Employee')
+  // const [activeView, setActiveView] = useState('Employee')
   const [analyticsState, setAnalyticsState] = useState({ view: null, response: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const allowedViews = ROLE_VIEWS[role] || ['Employee']
+  const [activeView, setActiveView] = useState(allowedViews[0])
+  const [showInsights, setShowInsights] = useState(false)
 
   useEffect(() => {
     if (!allowedViews.includes(activeView)) {
@@ -123,11 +126,44 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <PageHeader />
-      <Tabs
-        allowedViews={allowedViews}
-        active={activeView}
-        onChange={setActiveView}
-      />
+      <div className="relative flex items-center justify-between">
+        {role === 'MANAGER' && (
+            <Tabs
+              allowedViews={allowedViews}
+              active={activeView}
+              onChange={setActiveView}
+            />
+
+          )}
+          {data?.insights?.length > 0 && (
+            <button
+              onClick={() => setShowInsights((prev) => !prev)}
+              className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface shadow-sm transition hover:bg-elevated"
+              title="AI Insights"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5 text-amber-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c.6.6 1 1.3 1.3 2h5.4c.3-.7.7-1.4 1.3-2A7 7 0 0012 2z"
+                />
+              </svg>
+            </button>
+          )}
+
+          <InsightsPanel
+            insights={data?.insights || []}
+            open={showInsights}
+            onClose={() => setShowInsights(false)}
+          />
+      </div>
 
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

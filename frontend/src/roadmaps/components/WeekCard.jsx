@@ -1,8 +1,9 @@
 import SkillBadge from "./SkillBadge";
 import CourseCard from "./CourseCard";
+import YoutubeCard from "./YoutubeCard";
 
 export default function WeekCard({ week }) {
-  const { skills, activities, courses } = week;
+  const { skills = [], activities = [], courses = [], youtube_videos = [] } = week;
 
   return (
     <div className="bg-white dark:bg-surface p-4 rounded-lg">
@@ -32,11 +33,22 @@ export default function WeekCard({ week }) {
       )}
 
       {courses.length > 0 && (
-        <div>
+        <div className="mb-6">
           <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">Courses</h3>
           <div className="space-y-3">
             {courses.map((course) => (
               <CourseCard key={course.course_id} course={course} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {youtube_videos.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">YouTube Videos</h3>
+          <div className="space-y-3">
+            {youtube_videos.slice(0, 2).map((video, index) => (
+              <YoutubeCard key={index} video={video} />
             ))}
           </div>
         </div>
