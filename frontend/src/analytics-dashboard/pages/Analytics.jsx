@@ -9,7 +9,6 @@ import StatCard from '../components/StatCard'
 import EmployeeView from './EmployeeView'
 import ManagerView from './ManagerView'
 import ExecutiveView from './ExecutiveView'
-import { LightBulbIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import InsightsPanel from '../components/Insights'
 
 const ROLE_VIEWS = {
@@ -142,7 +141,20 @@ export default function Analytics() {
               className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface shadow-sm transition hover:bg-elevated"
               title="AI Insights"
             >
-              <LightBulbIcon className="h-5 w-5 text-amber-500" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5 text-amber-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c.6.6 1 1.3 1.3 2h5.4c.3-.7.7-1.4 1.3-2A7 7 0 0012 2z"
+                />
+              </svg>
             </button>
           )}
 
